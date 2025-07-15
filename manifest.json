@@ -1,0 +1,10 @@
+{
+    "domain": "sifely_cloud_custom",
+    "name": "Sifely Cloud Custom",
+    "version": "2025.07.15",
+    "documentation": "https://github.com/kenster1965/sifely_cloud_custom",
+    "dependencies": [],
+    "codeowners": ["@kenster1965"],
+    "config_flow": true,
+    "requirements": []
+}

@@ -1,0 +1,16 @@
+# .gitignore for my config dir.
+# An * ensures that everything will be ignored.
+# *
+# You can whitelist files/folders with !, these will not be ignored.
+!*.yaml
+!.gitignore
+!*.md
+!*.sh
+!*.js*
+
+# Ignored folders!!
+#config/devices
+
+# I want these files ignored!!
+secrets.yaml
+sifely_token.json
