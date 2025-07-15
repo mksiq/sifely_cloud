@@ -1,8 +1,8 @@
 {
-    "domain": "sifely_cloud_custom",
-    "name": "Sifely Cloud Custom",
+    "domain": "sifely_cloud",
+    "name": "Sifely Cloud",
     "version": "2025.07.15",
-    "documentation": "https://github.com/kenster1965/sifely_cloud_custom",
+    "documentation": "https://github.com/kenster1965/sifely_cloud",
     "dependencies": [],
     "codeowners": ["@kenster1965"],
     "config_flow": true,
