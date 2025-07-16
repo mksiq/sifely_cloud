@@ -6,5 +6,7 @@
     "dependencies": [],
     "codeowners": ["@kenster1965"],
     "config_flow": true,
+    "iot_class": "cloud_polling",
+    "translations": ["en"],
     "requirements": []
 }
