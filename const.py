@@ -12,10 +12,6 @@ CONF_EMAIL = "User_Email"
 CONF_PASSWORD = "User_Password"
 CONF_CLIENT_ID = "clientId"
 
-
-# How often to refresh the token if not provided by API
-#TOKEN_LIFETIME_MINUTES = 60
-TOKEN_LIFETIME_MINUTES = 6
 # Buffer time to refresh token early (before actual expiration)
 TOKEN_REFRESH_BUFFER_MINUTES = 5
 
