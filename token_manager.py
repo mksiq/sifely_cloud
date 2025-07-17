@@ -1,101 +1,138 @@
 import logging
-from datetime import datetime, timedelta
-import aiohttp
-import asyncio
+from datetime import datetime, timezone, timedelta
 
-from .const import TOKEN_ENDPOINT, REFRESH_ENDPOINT
+from homeassistant.helpers.event import async_call_later
+
+from .const import (
+    TOKEN_ENDPOINT,
+    REFRESH_ENDPOINT,
+    TOKEN_LIFETIME_MINUTES,
+    TOKEN_REFRESH_BUFFER_MINUTES,
+)
 
 _LOGGER = logging.getLogger(__name__)
 
-
 class SifelyTokenManager:
-    """Handles login and token management for Sifely Cloud."""
-
-    def __init__(self, client_id, username, password, session: aiohttp.ClientSession):
-        self.client_id = client_id
-        self.username = username
+    def __init__(self, client_id, email, password, session, hass):
+        self.email = email
         self.password = password
+        self.client_id = client_id
         self.session = session
+        self.hass = hass
 
         self.access_token = None
-        self.refresh_token = None
-        self.token_expiry = datetime.utcnow()
+        self.refresh_token_value = None
+        self.token_expiry = None
 
-    async def get_token(self):
-        now = datetime.datetime.utcnow()
-        if self.access_token and self.token_expiry and now < self.token_expiry:
-            return self.access_token
+        self._refresh_unsub = None
 
-        if self.refresh_token:
-            try:
-                await self.refresh_from_refresh_token()
-                return self.access_token
-            except Exception:
-                _LOGGER.warning("⚠️ Refresh token failed, falling back to full login")
+    async def login(self):
+        """Login to retrieve initial access and refresh tokens."""
+        payload = {
+            "client_id": self.client_id,
+            "username": self.email,
+            "password": self.password,
+        }
 
-        await self.refresh_token_func()
-        return self.access_token
+        _LOGGER.debug("🔐 Requesting Sifely token from: %s", TOKEN_ENDPOINT)
 
-    async def refresh_token_func(self):
-        """Login and refresh access token."""
         try:
-            _LOGGER.debug("🔐 Requesting Sifely token from: %s", TOKEN_ENDPOINT)
+            async with self.session.post(TOKEN_ENDPOINT, params=payload) as resp:
+                resp_json = await resp.json()
+                _LOGGER.debug("🔁 Sifely token response: %s", resp_json)
 
-            params = {
-                "client_id": self.client_id,
-                "username": self.username,
-                "password": self.password,
-            }
+                if resp.status == 200 and "data" in resp_json:
+                    data = resp_json["data"]
+                    self.access_token = data.get("token")
+                    self.refresh_token_value = data.get("refreshToken")
+                    expires_in = data.get("expires_in")
 
-            async with self.session.post(TOKEN_ENDPOINT, params=params, timeout=10) as resp:
-                data = await resp.json()
-                _LOGGER.debug("🔁 Sifely token response: %s", data)
+                    self._set_token_expiry(expires_in)
+                    minutes_until_expiry = (self.token_expiry - datetime.now(timezone.utc)).total_seconds() / 60
+                    _LOGGER.info("✅ Sifely token acquired. Expires in %.2f minutes.", minutes_until_expiry)
 
-                if data.get("code") != 200 or "data" not in data:
-                    raise Exception(f"Login failed: {data.get('message', 'Unknown error')}")
-
-                self.access_token = data["data"]["token"]
-                self.refresh_token = data["data"]["refreshToken"]
-
-                # Assume token is good for 1 hour (can adjust if needed)
-                self.token_expiry = datetime.utcnow() + timedelta(seconds=3600)
-
-                _LOGGER.info("✅ Sifely token acquired. Expires in 1 hour.")
-
-        except aiohttp.ClientConnectorError as e:
-            _LOGGER.error("❌ Could not connect to Sifely: %s", e)
-            raise
-
-        except asyncio.TimeoutError:
-            _LOGGER.error("❌ Timeout connecting to Sifely token endpoint.")
-            raise
-
+                    # Schedule refresh
+                    self._schedule_token_refresh()
+                else:
+                    _LOGGER.error("❌ Failed to retrieve token: %s", resp_json)
         except Exception as e:
-            _LOGGER.exception("❌ Failed to refresh Sifely token")
-            raise
+            _LOGGER.exception("🚨 Exception during Sifely token request: %s", str(e))
 
-    async def refresh_from_refresh_token(self):
-        if not self.refresh_token:
-            raise ValueError("No refresh token available")
+    async def refresh_access_token(self):
+        """Use the refresh token to obtain a new access token."""
+        if not self.refresh_token_value:
+            _LOGGER.warning("⚠️ No refresh token available; falling back to full login")
+            await self.login()
+            return
 
         payload = {
             "client_id": self.client_id,
-            "refresh_token": self.refresh_token,
+            "grant_type": "refresh_token",
+            "refresh_token": self.refresh_token_value,
         }
-
-        _LOGGER.debug("🔄 Refreshing Sifely access token using refresh_token")
+        _LOGGER.debug("🔄 Refreshing Sifely access token from: %s", REFRESH_ENDPOINT)
 
         try:
-            async with self.session.post(REFRESH_ENDPOINT, json=payload) as resp:
-                resp.raise_for_status()
-                result = await resp.json()
-                _LOGGER.debug("🔄 Refresh token response: %s", result)
+            async with self.session.post(REFRESH_ENDPOINT, params=payload) as resp:
+                resp_json = await resp.json()
+                _LOGGER.debug("🔁 Refresh token response: %s", resp_json)
 
-                self.access_token = result["access_token"]
-                self.refresh_token = result["refresh_token"]
-                self.token_expiry = datetime.datetime.utcnow() + datetime.timedelta(seconds=result["expires_in"] - 60)
+                if resp.status == 200 and "access_token" in resp_json:
+                    self.access_token = resp_json.get("access_token")
+                    self.refresh_token_value = resp_json.get("refresh_token")
+                    expires_in = resp_json.get("expires_in")
 
-                _LOGGER.info("✅ Sifely token refreshed successfully")
+                    self._set_token_expiry(expires_in)
+                    minutes_until_expiry = (self.token_expiry - datetime.now(timezone.utc)).total_seconds() / 60
+                    _LOGGER.info("🔄 Token refreshed successfully. Expires in %.2f minutes.", minutes_until_expiry)
+
+                    # Re-schedule next refresh
+                    self._schedule_token_refresh()
+                else:
+                    _LOGGER.error("❌ Failed to refresh token: %s", resp_json)
         except Exception as e:
-            _LOGGER.exception("❌ Failed to refresh Sifely token")
-            raise
+            _LOGGER.exception("🚨 Exception during token refresh: %s", str(e))
+
+
+    def _set_token_expiry(self, expires_in: int = None):
+        now = datetime.now(timezone.utc)
+        if expires_in is not None:
+            # Use actual expires_in value from the API response
+            expires = now + timedelta(seconds=expires_in)
+            _LOGGER.debug("🕒 Token expiry set using API-provided expires_in: %d seconds", expires_in)
+        else:
+            # Fallback to default configured duration
+            expires = now + timedelta(minutes=TOKEN_LIFETIME_MINUTES)
+            _LOGGER.debug("🕒 Token expiry set using default TOKEN_LIFETIME_MINUTES: %d minutes", TOKEN_LIFETIME_MINUTES)
+
+        self.token_expiry = expires
+
+
+    def _schedule_token_refresh(self):
+        if self._refresh_unsub:
+            self._refresh_unsub()
+
+        now = datetime.now(timezone.utc)
+        delay = (self.token_expiry - timedelta(minutes=TOKEN_REFRESH_BUFFER_MINUTES) - now).total_seconds()
+        delay = max(delay, 30)  # Ensure some minimum delay, 30 seconds
+
+        _LOGGER.debug("⏳ Scheduling token refresh in %.2f seconds", delay)
+
+        self._refresh_unsub = async_call_later(self.hass, delay, self._handle_token_refresh)
+
+    async def _handle_token_refresh(self, _):
+        _LOGGER.info("🔁 Refreshing token before expiration...")
+        await self.refresh_access_token()
+
+    def get_token_expiry_minutes(self) -> int:
+        if not self.token_expiry:
+            return 0
+        return int((self.token_expiry - datetime.now(timezone.utc)).total_seconds() / 60)
+
+
+    # TODO: Implement logout if needed
+    async def async_shutdown(self):
+        """Clean up resources when unloading the integration."""
+        if self._refresh_unsub:
+            self._refresh_unsub()  # Cancel the scheduled callback
+            self._refresh_unsub = None

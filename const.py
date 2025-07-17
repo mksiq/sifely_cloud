@@ -5,35 +5,32 @@ import os
 # Base component constants
 NAME = "Sifely Cloud"
 DOMAIN = "sifely_cloud"
-VERSION = "2025.07.15"
+VERSION = "2025.07.16"
 ISSUE_URL = "https://github.com/kenster1965/sifely_cloud/issues"
 
 CONF_EMAIL = "User_Email"
 CONF_PASSWORD = "User_Password"
 CONF_CLIENT_ID = "clientId"
-CONF_CLIENT_SECRET = "clientSecret"
-CONF_TOKEN_REFRESH = "token_refresh"
 
-CONFIG_FILE = "secrets.yaml"
-CONFIG_PATH = os.path.join("/config", CONFIG_FILE)
 
-TOKEN_FILE = "sifely_token.json"
-TOKEN_PATH = os.path.join("/config", TOKEN_FILE)
+# How often to refresh the token if not provided by API
+#TOKEN_LIFETIME_MINUTES = 60
+TOKEN_LIFETIME_MINUTES = 6
+# Buffer time to refresh token early (before actual expiration)
+TOKEN_REFRESH_BUFFER_MINUTES = 5
 
 API_BASE_URL = "https://app-smart-server.sifely.com/system/smart"
 TOKEN_ENDPOINT = f"{API_BASE_URL}/login"
-REFRESH_ENDPOINT = "https://app-smart-server.sifely.com/system/smart/refreshToken"
+REFRESH_ENDPOINT = f"{API_BASE_URL}/oauthToken"
 
 # Valid HA entity categories
 VALID_ENTITY_CATEGORIES = {
-    "config",
-    "diagnostic",
+    "config",  "diagnostic",
 }
 
 # Valid HA device classes for sensor and number
 VALID_SENSOR_CLASSES = {
-    "illuminance", "signal_strength", "battery",
-    "timestamp",
+    "illuminance", "signal_strength", "battery", "timestamp",
 }
 
 # Supported platforms

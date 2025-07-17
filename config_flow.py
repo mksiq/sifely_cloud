@@ -9,8 +9,6 @@ from .const import (
     CONF_EMAIL,
     CONF_PASSWORD,
     CONF_CLIENT_ID,
-    CONF_CLIENT_SECRET,
-    CONF_TOKEN_REFRESH,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -49,8 +47,6 @@ class SifelyCloudConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 vol.Required(CONF_EMAIL, default=user_input.get(CONF_EMAIL, "")): str,
                 vol.Required(CONF_PASSWORD, default=user_input.get(CONF_PASSWORD, "")): str,
                 vol.Required(CONF_CLIENT_ID, default=user_input.get(CONF_CLIENT_ID, "")): str,
-                vol.Required(CONF_CLIENT_SECRET, default=user_input.get(CONF_CLIENT_SECRET, "")): str,
-                vol.Optional(CONF_TOKEN_REFRESH, default=user_input.get(CONF_TOKEN_REFRESH, 60)): int,
             }),
             errors=errors
         )
@@ -77,8 +73,6 @@ class SifelyCloudOptionsFlowHandler(config_entries.OptionsFlow):
                 vol.Required(CONF_EMAIL, default=default(CONF_EMAIL)): str,
                 vol.Required(CONF_PASSWORD, default=default(CONF_PASSWORD)): str,
                 vol.Required(CONF_CLIENT_ID, default=default(CONF_CLIENT_ID)): str,
-                vol.Required(CONF_CLIENT_SECRET, default=default(CONF_CLIENT_SECRET)): str,
-                vol.Optional(CONF_TOKEN_REFRESH, default=default(CONF_TOKEN_REFRESH, 60)): int,
             }),
         )
 

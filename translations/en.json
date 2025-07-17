@@ -8,9 +8,7 @@
         "data": {
           "User_Email": "Email Address",
           "User_Password": "Password",
-          "clientId": "Client ID",
-          "clientSecret": "Client Secret",
-          "token_refresh": "Token Refresh (minutes)"
+          "clientId": "Client ID"
         }
       }
     },
@@ -29,9 +27,7 @@
         "data": {
           "User_Email": "Email Address",
           "User_Password": "Password",
-          "clientId": "Client ID",
-          "clientSecret": "Client Secret",
-          "token_refresh": "Token Refresh (minutes)"
+          "clientId": "Client ID"
         }
       }
     }

@@ -11,7 +11,6 @@ from .const import (
     CONF_EMAIL,
     CONF_PASSWORD,
     CONF_CLIENT_ID,
-    CONF_TOKEN_REFRESH,
     STARTUP_MESSAGE,
 )
 
@@ -21,7 +20,6 @@ _LOGGER = logging.getLogger(__name__)
 async def async_setup(hass: HomeAssistant, config: dict):
     """Handle YAML setup (unused)."""
     return True
-
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
     """Handle integration setup from config flow."""
@@ -35,7 +33,6 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
     email = entry.options.get(CONF_EMAIL)
     password = entry.options.get(CONF_PASSWORD)
     client_id = entry.options.get(CONF_CLIENT_ID)
-    token_refresh = entry.options.get(CONF_TOKEN_REFRESH, 60)
 
     if not all([email, password, client_id]):
         _LOGGER.error("❌ Missing required credentials in config entry.")
@@ -45,10 +42,10 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
 
     # Create token manager and log in
     session = async_get_clientsession(hass)
-    token_manager = SifelyTokenManager(client_id, email, password, session)
+    token_manager = SifelyTokenManager(client_id, email, password, session, hass)
 
     try:
-        await token_manager.refresh_token_func()
+        await token_manager.login()
         _LOGGER.info("✅ Sifely token initialized successfully.")
     except Exception as e:
         _LOGGER.exception("❌ Failed to authenticate with Sifely")
@@ -61,6 +58,11 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry):
     """Handle removal of an entry."""
+    token_manager = hass.data[DOMAIN].get(entry.entry_id)
+
+    if token_manager:
+        await token_manager.async_shutdown()
+
     hass.data[DOMAIN].pop(entry.entry_id, None)
     return True
 
