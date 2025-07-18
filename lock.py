@@ -1,17 +1,72 @@
 import logging
-from datetime import timedelta
 
+from homeassistant.components.lock import LockEntity
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
-from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
+from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 
-from .const import DOMAIN, KEYLIST_ENDPOINT, CONF_APX_NUM_LOCKS
-from .token_manager import SifelyTokenManager
-from .lock import create_lock_entities
+from .const import DOMAIN
+from .device import async_register_lock_device
 
 _LOGGER = logging.getLogger(__name__)
+
+
+def create_lock_entities(locks: list[dict], coordinator: DataUpdateCoordinator) -> list[LockEntity]:
+    """Create lock entities from Sifely lock data."""
+    entities = []
+    for lock in locks:
+        if lock.get("lockId") is not None:
+            entities.append(SifelySmartLock(lock, coordinator))
+        else:
+            _LOGGER.warning("⚠️ Skipping lock with missing lockId: %s", lock)
+    return entities
+
+
+class SifelySmartLock(LockEntity):
+    """Representation of a Sifely Smart Lock."""
+
+    def __init__(self, lock_data: dict, coordinator: DataUpdateCoordinator):
+        self.coordinator = coordinator
+        self.lock_data = lock_data
+        lock_id = lock_data.get("lockId")
+
+        self._attr_name = lock_data.get("lockAlias", "Sifely Lock")
+        self._attr_unique_id = f"sifely_lock_{lock_id}" if lock_id else None
+        self._attr_device_info = async_register_lock_device(lock_data)
+
+    @property
+    def is_locked(self) -> bool | None:
+        # Using passageMode: 2 = unlocked, 1 = locked (subject to confirmation)
+        passage_mode = self.lock_data.get("passageMode")
+        if passage_mode is None:
+            return None
+        return passage_mode != 2
+
+    async def async_lock(self, **kwargs):
+        # TODO: Implement actual lock API call
+        _LOGGER.info("🔒 Lock command issued for %s", self.lock_data.get("lockAlias"))
+
+    async def async_unlock(self, **kwargs):
+        # TODO: Implement actual unlock API call
+        _LOGGER.info("🔓 Unlock command issued for %s", self.lock_data.get("lockAlias"))
+
+    @property
+    def available(self):
+        return self.lock_data.get("lockId") is not None
+
+    async def async_update(self):
+        await self.coordinator.async_request_refresh()
+
+    async def async_added_to_hass(self):
+        self.async_on_remove(self.coordinator.async_add_listener(self._handle_coordinator_update))
+
+    def _handle_coordinator_update(self):
+        for updated_lock in self.coordinator.data:
+            if updated_lock.get("lockId") == self.lock_data.get("lockId"):
+                self.lock_data = updated_lock
+                break
+        self.async_write_ha_state()
 
 
 async def async_setup_entry(
@@ -20,55 +75,17 @@ async def async_setup_entry(
     async_add_entities: AddEntitiesCallback,
 ) -> None:
     """Set up Sifely lock entities."""
-    _LOGGER.info("🔐 Setting up Sifely platform for locks")
+    _LOGGER.info("🔐 Setting up Sifely locks")
 
-    token_manager: SifelyTokenManager = hass.data[DOMAIN][config_entry.entry_id]
-    login_token = token_manager.get_login_token()
-
-    if not login_token:
-        _LOGGER.error("❌ Cannot fetch login token from token manager.")
-        return
-
-    session = token_manager.session
-    apx_locks = config_entry.options.get(CONF_APX_NUM_LOCKS, 5)
-
-    headers = {
-        "Authorization": f"Bearer {login_token}",
-        "Content-Type": "application/x-www-form-urlencoded",
-    }
-
-    payload = {
-        "pageNo": 1,
-        "pageSize": apx_locks,
-    }
-
-    async def async_update_data():
-        try:
-            async with session.post(KEYLIST_ENDPOINT, data=payload, headers=headers) as resp:
-                data = await resp.json()
-                _LOGGER.debug("🔑 Lock list response: %s", data)
-
-                if resp.status != 200 or "data" not in data or "list" not in data["data"]:
-                    raise UpdateFailed(f"Failed to retrieve lock list: {data}")
-
-                return data["data"]["list"]
-        except Exception as e:
-            raise UpdateFailed(f"Exception while fetching lock list: {str(e)}")
-
-    coordinator = DataUpdateCoordinator(
-        hass,
-        _LOGGER,
-        name="sifely_locks",
-        update_method=async_update_data,
-        update_interval=timedelta(minutes=5),
-    )
-
-    await coordinator.async_config_entry_first_refresh()
-
-    if not coordinator.data:
-        _LOGGER.warning("⚠️ No locks found to set up.")
+    coordinator = hass.data[DOMAIN].get("coordinator")
+    if not coordinator:
+        _LOGGER.warning("⚠️ No coordinator found for Sifely locks")
         return
 
     entities = create_lock_entities(coordinator.data, coordinator)
-    async_add_entities(entities, update_before_add=True)
-    _LOGGER.info("🔐 %d Sifely locks added.", len(entities))
+    async_add_entities(entities)
+
+    if entities:
+        _LOGGER.info("🔐 %d Sifely locks added.", len(entities))
+    else:
+        _LOGGER.warning("⚠️ No Sifely locks found to set up.")

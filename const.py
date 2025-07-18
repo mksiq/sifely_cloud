@@ -17,9 +17,9 @@ CONF_APX_NUM_LOCKS = "apxNumLocks" # Approximate number of locks
 TOKEN_REFRESH_BUFFER_MINUTES = 5
 
 # API endpoints
-API_BASE_URL = "https://app-smart-server.sifely.com/system/smart"
-TOKEN_ENDPOINT = f"{API_BASE_URL}/smart/login"
-REFRESH_ENDPOINT = f"{API_BASE_URL}/smart/oauthToken"
+API_BASE_URL = "https://app-smart-server.sifely.com"
+TOKEN_ENDPOINT = f"{API_BASE_URL}/system/smart/login"
+REFRESH_ENDPOINT = f"{API_BASE_URL}/system/smart/oauthToken"
 KEYLIST_ENDPOINT = f"{API_BASE_URL}/v3/key/list"
 
 

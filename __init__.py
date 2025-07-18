@@ -6,6 +6,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
 from .token_manager import SifelyTokenManager
+from .sifely import setup_sifely_coordinator
 from .const import (
     DOMAIN,
     CONF_EMAIL,
@@ -55,7 +56,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
 
     try:
         await token_manager.initialize()
-        _LOGGER.info("✅ Sifely token manager initialized successfully.")
+        coordinator = await setup_sifely_coordinator(hass, token_manager, entry)
+        _LOGGER.info("✅ Sifely token manager and coordinator initialized successfully.")
     except Exception as e:
         _LOGGER.exception("❌ Failed to initialize Sifely integration")
         return False
