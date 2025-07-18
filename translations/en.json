@@ -1,0 +1,35 @@
+{
+  "title": "Sifely Cloud",
+  "config": {
+    "step": {
+      "user": {
+        "title": "Configure Sifely Cloud",
+        "description": "Enter your Sifely credentials. If you need help with the configuration have a look here: https://github.com/kenster1965/sifely_cloud",
+        "data": {
+          "User_Email": "Email Address",
+          "User_Password": "Password",
+          "clientId": "Client ID"
+        }
+      }
+    },
+    "error": {
+      "auth": "Invalid username or password"
+    },
+      "abort": {
+        "single_instance_allowed": "Only a single configuration of Sifely Cloud is allowed."
+      }
+  },
+  "options": {
+    "step": {
+      "user": {
+        "title": "Sifely Cloud Options",
+        "description": "Update your settings.",
+        "data": {
+          "User_Email": "Email Address",
+          "User_Password": "Password",
+          "clientId": "Client ID"
+        }
+      }
+    }
+  }
+}
