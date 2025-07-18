@@ -20,7 +20,8 @@ class SifelyTokenManager:
         self.hass = hass
         self.config_entry = config_entry
 
-        self.access_token = None
+        self.login_token = None  # Used for device discovery
+        self.access_token = None  # Used for general API requests
         self.refresh_token_value = None
         self.token_expiry = None
 
@@ -40,6 +41,7 @@ class SifelyTokenManager:
 
     def _load_stored_tokens(self):
         opts = self.config_entry.options
+        self.login_token = opts.get("login_token")
         self.access_token = opts.get("access_token")
         self.refresh_token_value = opts.get("refresh_token")
         expiry_ts = opts.get("token_expiry")
@@ -68,7 +70,7 @@ class SifelyTokenManager:
 
                 if resp.status == 200 and "data" in resp_json:
                     data = resp_json["data"]
-                    self.access_token = data.get("token")
+                    self.login_token = data.get("token")
                     self.refresh_token_value = data.get("refreshToken")
                 else:
                     raise Exception(f"Login failed: {resp_json}")
@@ -126,6 +128,7 @@ class SifelyTokenManager:
     async def _store_token(self):
         opts = dict(self.config_entry.options)
         opts.update({
+            "login_token": self.login_token,
             "access_token": self.access_token,
             "refresh_token": self.refresh_token_value,
             "token_expiry": self.token_expiry.isoformat(),
@@ -136,3 +139,9 @@ class SifelyTokenManager:
         if self._refresh_unsub:
             self._refresh_unsub()
             self._refresh_unsub = None
+
+    def get_login_token(self):
+        return self.login_token
+
+    def get_access_token(self):
+        return self.access_token

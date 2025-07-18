@@ -8,7 +8,8 @@
         "data": {
           "User_Email": "Email Address",
           "User_Password": "Password",
-          "clientId": "Client ID"
+          "clientId": "Client ID",
+          "apxNumLocks": "Number of Locks (APX)"
         }
       }
     },
@@ -27,7 +28,8 @@
         "data": {
           "User_Email": "Email Address",
           "User_Password": "Password",
-          "clientId": "Client ID"
+          "clientId": "Client ID",
+          "apxNumLocks": "Number of Locks (APX)"
         }
       }
     }
