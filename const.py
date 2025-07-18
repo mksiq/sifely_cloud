@@ -5,6 +5,7 @@ import os
 # Base component constants
 NAME = "Sifely Cloud"
 DOMAIN = "sifely_cloud"
+ENTITY_PREFIX = "sifely" # Prefix for entity names
 VERSION = "2025.07.16"
 ISSUE_URL = "https://github.com/kenster1965/sifely_cloud/issues"
 

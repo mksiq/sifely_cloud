@@ -5,8 +5,10 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
+from homeassistant.helpers.entity import EntityCategory
+from homeassistant.util import slugify
 
-from .const import DOMAIN
+from .const import DOMAIN, ENTITY_PREFIX
 from .device import async_register_lock_device
 
 _LOGGER = logging.getLogger(__name__)
@@ -39,12 +41,14 @@ class SifelyBatterySensor(SensorEntity):
         lock_alias = lock_data.get("lockAlias", "Sifely Lock")
         lock_id = lock_data.get("lockId")
 
+        slug = slugify(lock_alias)
         self._attr_name = f"{lock_alias} Battery"
-        self._attr_unique_id = f"sifely_battery_{lock_id}" if lock_id else None
+        self._attr_unique_id = f"{ENTITY_PREFIX}_battery_{lock_id}" if lock_id else None
+        self._attr_entity_id = f"sensor.{ENTITY_PREFIX}_{slug}_battery"
         self._attr_native_unit_of_measurement = "%"
         self._attr_device_class = "battery"
         self._attr_state_class = "measurement"
-        self._attr_entity_category = "diagnostic"
+        self._attr_entity_category = EntityCategory.DIAGNOSTIC
         self._attr_device_info = async_register_lock_device(lock_data)
 
     @property

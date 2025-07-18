@@ -5,8 +5,9 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
+from homeassistant.util import slugify
 
-from .const import DOMAIN
+from .const import DOMAIN, ENTITY_PREFIX
 from .device import async_register_lock_device
 
 _LOGGER = logging.getLogger(__name__)
@@ -29,11 +30,25 @@ class SifelySmartLock(LockEntity):
     def __init__(self, lock_data: dict, coordinator: DataUpdateCoordinator):
         self.coordinator = coordinator
         self.lock_data = lock_data
+
+        alias = lock_data.get("lockAlias", "Sifely Lock")
+        slug = slugify(alias)
         lock_id = lock_data.get("lockId")
 
-        self._attr_name = lock_data.get("lockAlias", "Sifely Lock")
-        self._attr_unique_id = f"sifely_lock_{lock_id}" if lock_id else None
+        # Set a name for Home Assistant's UI and automatic entity ID generation
+        self._attr_name = f"{ENTITY_PREFIX.capitalize()} {alias}"  # e.g., "Sifely Front Door"
+
+        # This ensures the unique ID is stable and namespaced
+        self._attr_unique_id = f"{ENTITY_PREFIX}_lock_{lock_id}"
+
+
+        # Updated name to drive entity_id
+        self._attr_name = f"{ENTITY_PREFIX}_{slug}"
+        self._attr_unique_id = f"{ENTITY_PREFIX}_{slug}_{lock_id}" if lock_id else None
+
+        # Register device for diagnostics and grouping
         self._attr_device_info = async_register_lock_device(lock_data)
+
 
     @property
     def is_locked(self) -> bool | None:

@@ -1,6 +1,7 @@
 # sifely.py
 
 import logging
+import json
 from datetime import timedelta
 
 from homeassistant.core import HomeAssistant
@@ -25,10 +26,10 @@ class SifelyCoordinator(DataUpdateCoordinator):
         self.token_manager = token_manager
         self.config_entry = config_entry
         self.session = token_manager.session
-        self.login_token = token_manager.get_login_token()
+        self.access_token = token_manager.access_token
         self.apx_locks = config_entry.options.get(CONF_APX_NUM_LOCKS, 5)
 
-        if not self.login_token:
+        if not self.access_token:
             raise UpdateFailed("❌ Could not retrieve valid login token.")
 
         super().__init__(
@@ -41,8 +42,8 @@ class SifelyCoordinator(DataUpdateCoordinator):
     async def _async_update_data(self):
         """Fetch lock data from the Sifely API."""
         headers = {
-            "Authorization": f"Bearer {self.login_token}",
-            "Content-Type": "application/json",
+            "Authorization": f"Bearer {self.access_token}",
+            "Content-Type": "application/x-www-form-urlencoded",
         }
         params = {
             "pageNo": 1,
@@ -52,8 +53,13 @@ class SifelyCoordinator(DataUpdateCoordinator):
         try:
             _LOGGER.debug("📡 Fetching lock list from: %s", KEYLIST_ENDPOINT)
             async with self.session.post(KEYLIST_ENDPOINT, headers=headers, params=params) as resp:
-                data = await resp.json()
-                _LOGGER.debug("🔑 Lock list response: %s", data)
+                text = await resp.text()
+                _LOGGER.debug("🔑 Lock list raw response: %s", text)
+
+                try:
+                    data = json.loads(text)
+                except Exception as e:
+                    raise UpdateFailed(f"Failed to parse lock list response: {e}")
 
                 if resp.status != 200 or "list" not in data:
                     raise UpdateFailed(f"Unexpected lock list response: {data}")
