@@ -1,71 +1,74 @@
 import logging
-from homeassistant.components.lock import LockEntity
-from homeassistant.helpers.entity import DeviceInfo
+from datetime import timedelta
 
-from .const import DOMAIN
+from homeassistant.config_entries import ConfigEntry
+from homeassistant.core import HomeAssistant
+from homeassistant.helpers.aiohttp_client import async_get_clientsession
+from homeassistant.helpers.entity_platform import AddEntitiesCallback
+from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
+
+from .const import DOMAIN, KEYLIST_ENDPOINT, CONF_APX_NUM_LOCKS
+from .token_manager import SifelyTokenManager
+from .lock import create_lock_entities
 
 _LOGGER = logging.getLogger(__name__)
 
 
-def create_lock_entities(config_entry, coordinator):
-    """Create lock entities for each Sifely lock."""
-    entities = []
+async def async_setup_entry(
+    hass: HomeAssistant,
+    config_entry: ConfigEntry,
+    async_add_entities: AddEntitiesCallback,
+) -> None:
+    """Set up Sifely lock entities."""
+    _LOGGER.info("🔐 Setting up Sifely platform for locks")
 
-    for lock in coordinator.locks:
-        lock_id = lock.get("lockId")
-        if not lock_id:
-            continue
+    token_manager: SifelyTokenManager = hass.data[DOMAIN][config_entry.entry_id]
+    login_token = token_manager.get_login_token()
 
-        entity = SifelyLockEntity(config_entry, coordinator, lock)
-        entities.append(entity)
+    if not login_token:
+        _LOGGER.error("❌ Cannot fetch login token from token manager.")
+        return
 
-    return entities
+    session = token_manager.session
+    apx_locks = config_entry.options.get(CONF_APX_NUM_LOCKS, 5)
 
+    headers = {
+        "Authorization": f"Bearer {login_token}",
+        "Content-Type": "application/x-www-form-urlencoded",
+    }
 
-class SifelyLockEntity(LockEntity):
-    def __init__(self, config_entry, coordinator, lock_data):
-        self._config_entry = config_entry
-        self._coordinator = coordinator
-        self._lock_data = lock_data
-        self._lock_id = str(lock_data["lockId"])
-        self._lock_alias = lock_data.get("lockAlias", f"Sifely Lock {self._lock_id}")
+    payload = {
+        "pageNo": 1,
+        "pageSize": apx_locks,
+    }
 
-        self._attr_unique_id = f"{DOMAIN}_{self._lock_id}_lock"
-        self._attr_name = self._lock_alias
-        self._attr_is_locked = self._get_initial_lock_state()
+    async def async_update_data():
+        try:
+            async with session.post(KEYLIST_ENDPOINT, data=payload, headers=headers) as resp:
+                data = await resp.json()
+                _LOGGER.debug("🔑 Lock list response: %s", data)
 
-    @property
-    def device_info(self) -> DeviceInfo:
-        return DeviceInfo(
-            identifiers={(DOMAIN, self._lock_id)},
-            name=self._lock_alias,
-            manufacturer="Sifely",
-            model=self._lock_data.get("lockName"),
-        )
+                if resp.status != 200 or "data" not in data or "list" not in data["data"]:
+                    raise UpdateFailed(f"Failed to retrieve lock list: {data}")
 
-    def _get_initial_lock_state(self):
-        passage_mode = self._lock_data.get("passageMode")
-        if passage_mode == 2:  # Unlocked
-            return False
-        elif passage_mode == 1:  # Locked
-            return True
-        return None
+                return data["data"]["list"]
+        except Exception as e:
+            raise UpdateFailed(f"Exception while fetching lock list: {str(e)}")
 
-    async def async_lock(self, **kwargs):
-        _LOGGER.info("🔒 Locking %s", self._lock_alias)
-        await self._send_lock_command(lock=True)
+    coordinator = DataUpdateCoordinator(
+        hass,
+        _LOGGER,
+        name="sifely_locks",
+        update_method=async_update_data,
+        update_interval=timedelta(minutes=5),
+    )
 
-    async def async_unlock(self, **kwargs):
-        _LOGGER.info("🔓 Unlocking %s", self._lock_alias)
-        await self._send_lock_command(lock=False)
+    await coordinator.async_config_entry_first_refresh()
 
-    async def _send_lock_command(self, lock: bool):
-        # TODO: Implement lock/unlock API call using lockId and token
-        action = "lock" if lock else "unlock"
-        _LOGGER.debug("[SIMULATED] Would send '%s' command to lockId=%s", action, self._lock_id)
-        self._attr_is_locked = lock
-        self.async_write_ha_state()
+    if not coordinator.data:
+        _LOGGER.warning("⚠️ No locks found to set up.")
+        return
 
-    async def async_update(self):
-        await self._coordinator.async_request_refresh()
-        self._attr_is_locked = self._get_initial_lock_state()
+    entities = create_lock_entities(coordinator.data, coordinator)
+    async_add_entities(entities, update_before_add=True)
+    _LOGGER.info("🔐 %d Sifely locks added.", len(entities))

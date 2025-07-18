@@ -12,6 +12,7 @@ from .const import (
     CONF_PASSWORD,
     CONF_CLIENT_ID,
     STARTUP_MESSAGE,
+    SUPPORTED_PLATFORMS,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -61,14 +62,21 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
 
     # Store the token manager for use in other platforms
     hass.data[DOMAIN][entry.entry_id] = token_manager
+
+    # Forward to supported platforms (e.g., lock, sensor)
+    await hass.config_entries.async_forward_entry_setups(entry, SUPPORTED_PLATFORMS)
+
     return True
 
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry):
     """Handle removal of an entry."""
-    token_manager = hass.data[DOMAIN].get(entry.entry_id)
-    if token_manager:
-        await token_manager.async_shutdown()
+    unload_ok = await hass.config_entries.async_unload_platforms(entry, SUPPORTED_PLATFORMS)
 
-    hass.data[DOMAIN].pop(entry.entry_id, None)
-    return True
+    if unload_ok:
+        token_manager = hass.data[DOMAIN].get(entry.entry_id)
+        if token_manager:
+            await token_manager.async_shutdown()
+        hass.data[DOMAIN].pop(entry.entry_id, None)
+
+    return unload_ok

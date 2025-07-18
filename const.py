@@ -23,9 +23,6 @@ REFRESH_ENDPOINT = f"{API_BASE_URL}/smart/oauthToken"
 KEYLIST_ENDPOINT = f"{API_BASE_URL}/v3/key/list"
 
 
-
-
-
 # Valid HA entity categories
 VALID_ENTITY_CATEGORIES = {
     "config",  "diagnostic",
@@ -37,7 +34,7 @@ VALID_SENSOR_CLASSES = {
 }
 
 # Supported platforms
-SUPPORTED_PLATFORMS = {"switch", "sensor", "number"}
+SUPPORTED_PLATFORMS = {"lock", "sensor"}
 
 STARTUP_MESSAGE = f"""
 -------------------------------------------------------------------

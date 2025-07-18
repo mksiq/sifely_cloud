@@ -1,14 +1,15 @@
 import logging
-import asyncio
+from datetime import timedelta
 
-from homeassistant.core import HomeAssistant
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.helpers.device_registry import async_get as async_get_device_registry
+from homeassistant.core import HomeAssistant
+from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
-from homeassistant.helpers.typing import ConfigType, DiscoveryInfoType
+from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
-from .token_manager import SifelyTokenManager
 from .const import DOMAIN, KEYLIST_ENDPOINT, CONF_APX_NUM_LOCKS
+from .token_manager import SifelyTokenManager
+from .lock import create_lock_entities
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -17,8 +18,10 @@ async def async_setup_entry(
     hass: HomeAssistant,
     config_entry: ConfigEntry,
     async_add_entities: AddEntitiesCallback,
-):
-    """Set up Sifely locks as devices and entities."""
+) -> None:
+    """Set up Sifely lock entities."""
+    _LOGGER.info("🔐 Setting up Sifely platform for locks")
+
     token_manager: SifelyTokenManager = hass.data[DOMAIN][config_entry.entry_id]
     login_token = token_manager.get_login_token()
 
@@ -29,50 +32,41 @@ async def async_setup_entry(
     session = token_manager.session
     apx_locks = config_entry.options.get(CONF_APX_NUM_LOCKS, 5)
 
-    payload = {
-        "pageNo": 1,
-        "pageSize": apx_locks,
-    }
-
     headers = {
         "Authorization": f"Bearer {login_token}",
         "Content-Type": "application/x-www-form-urlencoded",
     }
 
-    try:
-        async with session.post(KEYLIST_ENDPOINT, data=payload, headers=headers) as resp:
-            data = await resp.json()
-            _LOGGER.debug("🔑 Key List response: %s", data)
+    payload = {
+        "keyRight": 1,
+        "groupId": 0,
+        "pageNo": 1,
+        "pageSize": apx_locks,
+    }
 
-            if data.get("code") != 200:
-                _LOGGER.error("❌ Failed to retrieve lock list: %s", data)
-                return
+    async def async_update_data():
+        try:
+            async with session.post(KEYLIST_ENDPOINT, data=payload, headers=headers) as resp:
+                data = await resp.json()
+                _LOGGER.debug("🔑 Lock list response: %s", data)
 
-            locks = data.get("data", {}).get("list", [])
-            _LOGGER.info("🔓 Discovered %d locks", len(locks))
+                if resp.status != 200 or "data" not in data or "list" not in data["data"]:
+                    raise UpdateFailed(f"Failed to retrieve lock list: {data}")
 
-            for lock in locks:
-                await _create_lock_device(hass, config_entry, lock)
+                return data["data"]["list"]
+        except Exception as e:
+            raise UpdateFailed(f"Exception while fetching lock list: {str(e)}")
 
-    except Exception as e:
-        _LOGGER.exception("🚨 Exception while fetching lock list: %s", str(e))
-
-
-async def _create_lock_device(hass: HomeAssistant, config_entry: ConfigEntry, lock_data: dict):
-    """Register a Sifely lock device in Home Assistant."""
-    registry = await async_get_device_registry(hass)
-
-    lock_id = str(lock_data.get("lockId"))
-    mac = lock_data.get("lockMac")
-    alias = lock_data.get("lockAlias", f"Sifely Lock {lock_id}")
-
-    _LOGGER.debug("🆕 Registering lock: %s (%s)", alias, lock_id)
-
-    registry.async_get_or_create(
-        config_entry_id=config_entry.entry_id,
-        identifiers={(DOMAIN, f"lock_{lock_id}")},
-        manufacturer="Sifely",
-        name=alias,
-        model=lock_data.get("lockName", "Unknown Model"),
-        sw_version=str(lock_data.get("keyboardPwdVersion", "n/a")),
+    coordinator = DataUpdateCoordinator(
+        hass,
+        _LOGGER,
+        name="sifely_locks",
+        update_method=async_update_data,
+        update_interval=timedelta(minutes=5),
     )
+
+    await coordinator.async_config_entry_first_refresh()
+
+    entities = create_lock_entities(coordinator.data, coordinator)
+    async_add_entities(entities)
+    _LOGGER.info("🔐 %d Sifely locks added.", len(entities))
