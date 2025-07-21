@@ -11,15 +11,17 @@ from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, Upda
 
 from .const import (
     DOMAIN,
-    KEYLIST_ENDPOINT,
-    LOCK_DETAIL_ENDPOINT,
+    LOCK_REQUEST_RETRIES,
+    STATE_QUERY_INTERVAL,
     CONF_APX_NUM_LOCKS,
     DETAILS_UPDATE_INTERVAL,
-    STATE_QUERY_INTERVAL,
+    HISTORY_DISPLAY_LIMIT,
+    KEYLIST_ENDPOINT,
+    LOCK_DETAIL_ENDPOINT,
     QUERY_STATE_ENDPOINT,
     LOCK_ENDPOINT,
     UNLOCK_ENDPOINT,
-    LOCK_REQUEST_RETRIES,
+    LOCK_HISTORY_ENDPOINT,
 )
 from .token_manager import SifelyTokenManager
 
@@ -220,6 +222,32 @@ class SifelyCoordinator(DataUpdateCoordinator):
                 _LOGGER.warning("🚫 Request error on %s command attempt %d for lock %s: %s", "lock" if lock else "unlock", attempt, lock_id, e)
 
         return False  # All retries failed
+
+
+    async def async_query_lock_history(self, lock_id: int) -> list:
+        """Fetch lock history records for a given lock."""
+        headers = {
+            "Authorization": f"Bearer {self.access_token}",
+            "Content-Type": "application/x-www-form-urlencoded",
+        }
+
+        url = f"{LOCK_HISTORY_ENDPOINT}?lockId={lock_id}&pageNo=1&pageSize={HISTORY_DISPLAY_LIMIT}"
+
+        try:
+            async with self.session.get(url, headers=headers) as resp:
+                text = await resp.text()
+                _LOGGER.debug("📜 Lock history response for %s: %s", lock_id, text)
+
+                data = json.loads(text)
+                if resp.status == 200 and "list" in data:
+                    return data["list"]
+                else:
+                    _LOGGER.warning("⚠️ Unexpected lock history for %s: %s", lock_id, data)
+                    return []
+
+        except Exception as e:
+            _LOGGER.warning("❌ Failed to fetch lock history for %s: %s", lock_id, e)
+            return []
 
 
 async def setup_sifely_coordinator(

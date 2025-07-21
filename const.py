@@ -19,10 +19,10 @@ CONF_APX_NUM_LOCKS = "apxNumLocks" # Approximate number of locks
 DETAILS_UPDATE_INTERVAL = 3600  # e.g., 1 hour for Lock details
 STATE_QUERY_INTERVAL = 60       # e.g., 60 seconds for Lock state
 
-# Buffer time to refresh token early (before actual expiration)
-TOKEN_REFRESH_BUFFER_MINUTES = 5
 
+TOKEN_REFRESH_BUFFER_MINUTES = 5 # Buffer time to refresh token early (before actual expiration)
 LOCK_REQUEST_RETRIES = 3  # Number of retries for lock/unlock requests
+HISTORY_DISPLAY_LIMIT = 10  # Limit for history display in UI
 
 # API endpoints
 API_BASE_URL = "https://app-smart-server.sifely.com"
@@ -33,6 +33,7 @@ LOCK_DETAIL_ENDPOINT = f"{API_BASE_URL}/v3/lock/detail"
 QUERY_STATE_ENDPOINT = f"{API_BASE_URL}/v3/lock/queryOpenState"
 UNLOCK_ENDPOINT = f"{API_BASE_URL}/v3/lock/unlock"
 LOCK_ENDPOINT = f"{API_BASE_URL}/v3/lock/lock"
+LOCK_HISTORY_ENDPOINT = f"{API_BASE_URL}/v3/lockRecord/list"
 
 
 # Valid HA entity categories
