@@ -1,4 +1,4 @@
-# sifely.py (Stable version with persistent polling, one-time lock fetch, and robust error handling)
+# sifely.py (with lock/unlock command support)
 
 import logging
 import json
@@ -17,6 +17,9 @@ from .const import (
     DETAILS_UPDATE_INTERVAL,
     STATE_QUERY_INTERVAL,
     QUERY_STATE_ENDPOINT,
+    LOCK_ENDPOINT,
+    UNLOCK_ENDPOINT,
+    LOCK_REQUEST_RETRIES,
 )
 from .token_manager import SifelyTokenManager
 
@@ -119,7 +122,6 @@ class SifelyCoordinator(DataUpdateCoordinator):
                         data = json.loads(text)
 
                         if resp.status == 200:
-                            # Case 1: Full format
                             if "code" in data:
                                 if data.get("code") == 200:
                                     self.open_state_data[lock_id] = data.get("data", {}).get("state")
@@ -128,7 +130,6 @@ class SifelyCoordinator(DataUpdateCoordinator):
                                 else:
                                     _LOGGER.warning("⚠️ Unexpected open state for %s: %s", lock_id, data)
 
-                            # Case 2: Direct state
                             elif "state" in data:
                                 self.open_state_data[lock_id] = data.get("state")
                             else:
@@ -169,7 +170,6 @@ class SifelyCoordinator(DataUpdateCoordinator):
                         data = json.loads(text)
 
                         if resp.status == 200:
-                            # Case 1: Standard format
                             if "code" in data:
                                 if data.get("code") == 200:
                                     self.details_data[lock_id] = data.get("data", {})
@@ -178,7 +178,6 @@ class SifelyCoordinator(DataUpdateCoordinator):
                                 else:
                                     _LOGGER.warning("⚠️ Unexpected lock detail for %s: %s", lock_id, data)
 
-                            # Case 2: Direct dict fallback
                             elif "lockId" in data:
                                 self.details_data[lock_id] = data
                             else:
@@ -191,6 +190,36 @@ class SifelyCoordinator(DataUpdateCoordinator):
 
             except Exception as e:
                 _LOGGER.warning("🚫 Failed to fetch lock detail for %s: %s", lock_id, e)
+
+    async def async_send_lock_command(self, lock_id: int, lock: bool) -> bool:
+        """Send a lock or unlock command to a specific lock."""
+        endpoint = LOCK_ENDPOINT if lock else UNLOCK_ENDPOINT
+        url = f"{endpoint}?lockId={lock_id}"
+        headers = {
+            "Authorization": f"Bearer {self.access_token}",
+            "Content-Type": "application/x-www-form-urlencoded",
+        }
+
+        for attempt in range(1, LOCK_REQUEST_RETRIES + 1):
+            try:
+                async with self.session.post(url, headers=headers) as resp:
+                    text = await resp.text()
+                    _LOGGER.debug("🔐 Lock command response (attempt %d) for %s: %s", attempt, lock_id, text)
+
+                    try:
+                        result = json.loads(text)
+                        if resp.status == 200 and result.get("errcode") == 0:
+                            _LOGGER.info("✅ Successfully sent %s command to lock %s", "lock" if lock else "unlock", lock_id)
+                            return True
+                        else:
+                            _LOGGER.warning("⚠️ Failed to %s lock %s (attempt %d): %s", "lock" if lock else "unlock", lock_id, attempt, result)
+                    except Exception as e:
+                        _LOGGER.warning("❌ Failed to parse %s response for lock %s: %s", "lock" if lock else "unlock", lock_id, e)
+
+            except Exception as e:
+                _LOGGER.warning("🚫 Request error on %s command attempt %d for lock %s: %s", "lock" if lock else "unlock", attempt, lock_id, e)
+
+        return False  # All retries failed
 
 
 async def setup_sifely_coordinator(
@@ -211,7 +240,7 @@ async def setup_sifely_coordinator(
     # 💾 Register the coordinator globally
     hass.data.setdefault(DOMAIN, {})["coordinator"] = coordinator
 
-    # ⏱️ Step 3: Schedule ongoing polling for lock deatails and open state
+    # ⏱️ Step 3: Schedule ongoing polling for lock details and open state
     async def _run_lock_details(now):
         _LOGGER.debug("⏱️ Scheduled task: Fetching lock details")
         await coordinator.async_query_lock_details()

@@ -22,6 +22,7 @@ STATE_QUERY_INTERVAL = 60       # e.g., 60 seconds for Lock state
 # Buffer time to refresh token early (before actual expiration)
 TOKEN_REFRESH_BUFFER_MINUTES = 5
 
+LOCK_REQUEST_RETRIES = 3  # Number of retries for lock/unlock requests
 
 # API endpoints
 API_BASE_URL = "https://app-smart-server.sifely.com"
@@ -30,7 +31,8 @@ REFRESH_ENDPOINT = f"{API_BASE_URL}/system/smart/oauthToken"
 KEYLIST_ENDPOINT = f"{API_BASE_URL}/v3/key/list"
 LOCK_DETAIL_ENDPOINT = f"{API_BASE_URL}/v3/lock/detail"
 QUERY_STATE_ENDPOINT = f"{API_BASE_URL}/v3/lock/queryOpenState"
-
+UNLOCK_ENDPOINT = f"{API_BASE_URL}/v3/lock/unlock"
+LOCK_ENDPOINT = f"{API_BASE_URL}/v3/lock/lock"
 
 
 # Valid HA entity categories

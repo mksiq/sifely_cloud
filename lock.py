@@ -56,12 +56,30 @@ class SifelySmartLock(LockEntity):
         return None
 
     async def async_lock(self, **kwargs):
-        # TODO: Implement actual lock API call
+        """Send lock command to the device."""
+        lock_id = self.lock_data.get("lockId")
+        if not lock_id:
+            _LOGGER.warning("🔒 Cannot lock: Missing lockId")
+            return
+
         _LOGGER.info("🔒 Lock command issued for %s", self.lock_data.get("lockAlias"))
+        await self.coordinator.async_send_lock_command(lock_id, lock=True)
+        # Run refresh state for faster UI update
+        await self.coordinator.async_query_open_state()
+        self.async_write_ha_state()
 
     async def async_unlock(self, **kwargs):
-        # TODO: Implement actual unlock API call
+        """Send unlock command to the device."""
+        lock_id = self.lock_data.get("lockId")
+        if not lock_id:
+            _LOGGER.warning("🔓 Cannot unlock: Missing lockId")
+            return
+
         _LOGGER.info("🔓 Unlock command issued for %s", self.lock_data.get("lockAlias"))
+        await self.coordinator.async_send_lock_command(lock_id, lock=False)
+        # Run refresh state for faster UI update
+        await self.coordinator.async_query_open_state()
+        self.async_write_ha_state()
 
     @property
     def available(self):
