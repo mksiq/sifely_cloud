@@ -13,11 +13,13 @@ CONF_EMAIL = "User_Email"
 CONF_PASSWORD = "User_Password"
 CONF_CLIENT_ID = "clientId"
 CONF_APX_NUM_LOCKS = "apxNumLocks" # Approximate number of locks
+CONF_HISTORY_ENTRIES = "history_entries"  # Number of history entries to keep
 
 
 # Polling Intervals (in seconds)
 DETAILS_UPDATE_INTERVAL = 3600  # e.g., 1 hour for Lock details
 STATE_QUERY_INTERVAL = 60       # e.g., 60 seconds for Lock state
+HISTORY_INTERVAL = 300          # e.g., 5 minutes for Lock history
 
 
 HISTORY_DISPLAY_LIMIT = 10  # Limit for history display in UI
