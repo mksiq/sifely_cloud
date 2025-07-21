@@ -141,6 +141,10 @@ class SifelyTokenManager:
     def get_login_token(self):
         return self._login_token
 
+    async def refresh_login_token(self):
+        await self._perform_login()
+        await self._perform_token_refresh()
+
     async def async_shutdown(self):
         if self._refresh_unsub:
             self._refresh_unsub()

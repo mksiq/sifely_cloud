@@ -4,6 +4,7 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
+from homeassistant.helpers.entity import EntityCategory
 from homeassistant.util import slugify
 from datetime import datetime, timezone
 
@@ -31,6 +32,16 @@ def create_history_entities(locks: list[dict], coordinator) -> list[SensorEntity
             entities.append(SifelyLockHistorySensor(lock, coordinator))
         else:
             _LOGGER.warning("⚠️ Skipping history sensor for lock with missing lockId: %s", lock)
+    return entities
+
+def create_error_entities(locks: list[dict], coordinator) -> list[SensorEntity]:
+    """Create cloud error sensor entities for each lock."""
+    entities = []
+    for lock in locks:
+        if lock.get("lockId") is not None:
+            entities.append(SifelyCloudErrorSensor(lock, coordinator))
+        else:
+            _LOGGER.warning("⚠️ Skipping error sensor for lock with missing lockId: %s", lock)
     return entities
 
 
@@ -98,6 +109,7 @@ class SifelyLockHistorySensor(CoordinatorEntity, SensorEntity):
         self._attr_icon = "mdi:history"
         self._attr_device_info = async_register_lock_device(lock_data)
         self._attr_native_value = None
+        self._attr_entity_category = EntityCategory.DIAGNOSTIC
         self._attr_extra_state_attributes = {}
 
     async def async_update(self):
@@ -137,6 +149,45 @@ class SifelyLockHistorySensor(CoordinatorEntity, SensorEntity):
         self._attr_extra_state_attributes = attr_map
 
 
+class SifelyCloudErrorSensor(CoordinatorEntity, SensorEntity):
+    """Sensor to indicate cloud communication errors."""
+
+    def __init__(self, lock_data: dict, coordinator):
+        super().__init__(coordinator)
+        self.coordinator = coordinator
+        self.lock_data = lock_data
+        self.lock_id = lock_data.get("lockId")
+        alias = lock_data.get("lockAlias", "Sifely Lock")
+        slug = slugify(alias)
+
+        self._attr_name = f"{ENTITY_PREFIX.capitalize()} Error {alias}"
+        self._attr_unique_id = f"{ENTITY_PREFIX}_error_{slug}_{self.lock_id}"
+        self._attr_icon = "mdi:alert-circle"
+        self._attr_native_value = "OK"
+        self._attr_entity_category = EntityCategory.DIAGNOSTIC
+        self._attr_extra_state_attributes = {}
+        self._attr_device_info = async_register_lock_device(lock_data)
+
+        coordinator.set_cloud_error = self.set_error
+        coordinator.clear_cloud_error = self.clear_error
+
+    def set_error(self, message: str):
+        self._attr_native_value = "Error"
+        self._attr_extra_state_attributes = {"last_error": message}
+        if self.hass:
+            self.async_write_ha_state()
+        else:
+            _LOGGER.warning("⚠️ Cannot update error sensor — hass is None")
+
+    def clear_error(self):
+        self._attr_native_value = "OK"
+        self._attr_extra_state_attributes = {}
+        if self.hass:
+            self.async_write_ha_state()
+        else:
+            _LOGGER.warning("⚠️ Cannot clear error sensor — hass is None")
+
+
 
 async def async_setup_entry(
     hass: HomeAssistant,
@@ -153,14 +204,17 @@ async def async_setup_entry(
 
     battery_entities = create_battery_entities(coordinator.data, coordinator)
     history_entities = create_history_entities(coordinator.data, coordinator)
+    error_entities = create_error_entities(coordinator.data, coordinator)
 
-    all_entities = battery_entities + history_entities
+    all_entities = battery_entities + history_entities + error_entities
     async_add_entities(all_entities)
 
     if battery_entities:
         _LOGGER.info("🔋 %d battery sensors added.", len(battery_entities))
     if history_entities:
         _LOGGER.info("📜 %d history sensors added.", len(history_entities))
+    if error_entities:
+        _LOGGER.info("🚨 %d error sensors added.", len(error_entities))
     if not all_entities:
         _LOGGER.warning("⚠️ No sensors found to set up.")
 

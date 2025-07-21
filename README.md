@@ -59,3 +59,34 @@ Responsibility	Current Location	Notes
 
 
 New locks are descoved on startup, manual reload, and
+
+
+Add a configuration option like enable_history_logging: true and history_log_interval: 10 (minutes).
+
+
+
+TODO:
+Start writing the readme
+Add docstriongs
+
+Add auto versioning
+
+Reauthentication Flow
+For expired credentials, you could add async_step_reauth() support so the user can re-authenticate without removing the integration.
+
+Diagnostics Support
+Add a /diagnostics endpoint for easy bug reporting via the HA UI.
+
+Data validation for history
+Validate and sort lock history by timestamp (to guard against out-of-order entries).
+
+CSV Export Support
+Optionally create a button to download the latest lock history to a .csv file via the www/ folder.
+
+
+
+(Optional) Persist cloud error status
+If you want the cloud error to survive reboot until cleared, you can store it in hass.data[DOMAIN] or config options. This is optional unless diagnostics need to be retained.
+
+Would you like me to now generate the diagnostic sensor (cloud_error_sensor.py) and wire it up in sensor.py and __init__.py?
+

@@ -16,6 +16,8 @@ from .const import (
     CONF_APX_NUM_LOCKS,
     DETAILS_UPDATE_INTERVAL,
     HISTORY_DISPLAY_LIMIT,
+    TOKEN_401s_BEFORE_REAUTH,
+    TOKEN_401s_BEFOR_ALERT,
     KEYLIST_ENDPOINT,
     LOCK_DETAIL_ENDPOINT,
     QUERY_STATE_ENDPOINT,
@@ -51,6 +53,9 @@ class SifelyCoordinator(DataUpdateCoordinator):
         self.lock_list = []
         self.details_data = {}
         self.open_state_data = {}
+        self._consecutive_401s = 0
+
+
 
         super().__init__(
             hass,
@@ -97,11 +102,15 @@ class SifelyCoordinator(DataUpdateCoordinator):
             _LOGGER.exception("🚨 Failed to fetch lock list: %s", str(e))
             raise UpdateFailed(f"Exception fetching locks: {str(e)}")
 
+
     async def async_query_open_state(self):
         """Query open/locked state for each lock and store in self.open_state_data."""
         if not self.lock_list:
             _LOGGER.debug("⏩ Skipping open state polling: lock list not available")
             return
+
+        if not hasattr(self, "_consecutive_401s"):
+            self._consecutive_401s = 0
 
         headers = {
             "Authorization": f"Bearer {self.access_token}",
@@ -124,6 +133,10 @@ class SifelyCoordinator(DataUpdateCoordinator):
                         data = json.loads(text)
 
                         if resp.status == 200:
+                            self._consecutive_401s = 0
+                            if hasattr(self, "clear_cloud_error"):
+                                self.clear_cloud_error()
+
                             if "code" in data:
                                 if data.get("code") == 200:
                                     self.open_state_data[lock_id] = data.get("data", {}).get("state")
@@ -136,6 +149,19 @@ class SifelyCoordinator(DataUpdateCoordinator):
                                 self.open_state_data[lock_id] = data.get("state")
                             else:
                                 _LOGGER.warning("⚠️ Unknown open state format for %s: %s", lock_id, data)
+
+                        elif resp.status == 401:
+                            self._consecutive_401s += 1
+                            _LOGGER.warning("⚠️ Received 401 (#%d) when fetching state for %s", self._consecutive_401s, lock_id)
+
+                            if self._consecutive_401s == TOKEN_401s_BEFORE_REAUTH:
+                                _LOGGER.warning(f"🔁 Detected {TOKEN_401s_BEFORE_REAUTH} consecutive 401s. Triggering token refresh...")
+                                await self.token_manager.refresh_login_token()
+
+                            if self._consecutive_401s >= TOKEN_401s_BEFOR_ALERT:
+                                if hasattr(self, "set_cloud_error"):
+                                    self.set_cloud_error(f"Exceeded {TOKEN_401s_BEFOR_ALERT} consecutive 401 errors. Token likely invalid.")
+
                         else:
                             _LOGGER.warning("⚠️ HTTP %d when fetching state for %s: %s", resp.status, lock_id, text)
 
@@ -144,6 +170,7 @@ class SifelyCoordinator(DataUpdateCoordinator):
 
             except Exception as e:
                 _LOGGER.warning("🚫 Failed to fetch open state for %s: %s", lock_id, e)
+
 
     async def async_query_lock_details(self):
         """Query detailed lock info for each lock and store in self.details_data."""
@@ -223,7 +250,6 @@ class SifelyCoordinator(DataUpdateCoordinator):
 
         return False  # All retries failed
 
-
     async def async_query_lock_history(self, lock_id: int) -> list:
         """Fetch lock history records for a given lock."""
         headers = {
@@ -248,6 +274,29 @@ class SifelyCoordinator(DataUpdateCoordinator):
         except Exception as e:
             _LOGGER.warning("❌ Failed to fetch lock history for %s: %s", lock_id, e)
             return []
+
+    def set_cloud_error(self, message: str):
+        """Set the error sensor to an alert state."""
+        if hasattr(self, "error_sensor") and self.error_sensor:
+            self.error_sensor.native_value = "Error"
+            self.error_sensor._attr_extra_state_attributes["last_error"] = message
+
+            if self.error_sensor.hass:
+                self.error_sensor.async_schedule_update_ha_state()
+            else:
+                _LOGGER.warning("⚠️ Cannot update error sensor — hass is None")
+
+    def clear_cloud_error(self):
+        """Clear the error sensor state."""
+        if hasattr(self, "error_sensor") and self.error_sensor:
+            self.error_sensor.native_value = "OK"
+            self.error_sensor._attr_extra_state_attributes = {}
+
+            if self.error_sensor.hass:
+                self.error_sensor.async_schedule_update_ha_state()
+            else:
+                _LOGGER.warning("⚠️ Cannot clear error sensor — hass is None")
+
 
 
 async def setup_sifely_coordinator(
