@@ -48,12 +48,22 @@ class SifelyCloudConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             errors=errors
         )
 
+    @staticmethod
+    @callback
+    def async_get_options_flow(config_entry):
+        """Expose the options flow handler for the gear icon."""
+        return SifelyCloudOptionsFlowHandler(config_entry)
+
 
 class SifelyCloudOptionsFlowHandler(config_entries.OptionsFlow):
     """Handle options for Sifely Cloud."""
 
     def __init__(self, config_entry: config_entries.ConfigEntry):
         self.config_entry = config_entry
+
+    async def async_step_init(self, user_input=None) -> FlowResult:
+        """Initial step for options flow (gear icon)."""
+        return await self.async_step_user(user_input)
 
     async def async_step_user(self, user_input=None) -> FlowResult:
         _LOGGER.debug("⚙️ OptionsFlow triggered with current options: %s", self.config_entry.options)
@@ -74,7 +84,3 @@ class SifelyCloudOptionsFlowHandler(config_entries.OptionsFlow):
             }),
         )
 
-
-@callback
-def async_get_options_flow(config_entry: config_entries.ConfigEntry):
-    return SifelyCloudOptionsFlowHandler(config_entry)

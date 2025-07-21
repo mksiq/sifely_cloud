@@ -1,6 +1,5 @@
 # __init__.py
 import logging
-
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
@@ -67,10 +66,18 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
         "coordinator": coordinator,
     }
 
+    # ✅ Listen for config option updates
+    entry.async_on_unload(entry.add_update_listener(options_update_listener))
+
     # Forward entry setup to platforms
     await hass.config_entries.async_forward_entry_setups(entry, SUPPORTED_PLATFORMS)
 
     return True
+
+
+async def options_update_listener(hass: HomeAssistant, config_entry: ConfigEntry):
+    """Handle options update by reloading the config entry."""
+    await hass.config_entries.async_reload(config_entry.entry_id)
 
 
 async def async_refresh_lock_list(hass: HomeAssistant):
@@ -92,9 +99,3 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry):
             await token_manager.async_shutdown()
 
     return unload_ok
-
-
-async def async_get_options_flow(config_entry: ConfigEntry):
-    """Expose the options flow handler."""
-    from .config_flow import SifelyCloudOptionsFlowHandler
-    return SifelyCloudOptionsFlowHandler(config_entry)

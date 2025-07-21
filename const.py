@@ -47,7 +47,7 @@ VALID_SENSOR_CLASSES = {
 }
 
 # Supported platforms
-SUPPORTED_PLATFORMS = {"lock", "sensor"}
+SUPPORTED_PLATFORMS = {"lock", "sensor", "button"}
 
 STARTUP_MESSAGE = f"""
 -------------------------------------------------------------------
