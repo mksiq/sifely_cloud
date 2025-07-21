@@ -1,11 +1,9 @@
 import logging
-
 from homeassistant.components.sensor import SensorEntity
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
-from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
-from homeassistant.helpers.entity import EntityCategory
+from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from homeassistant.util import slugify
 
 from .const import DOMAIN, ENTITY_PREFIX
@@ -14,65 +12,50 @@ from .device import async_register_lock_device
 _LOGGER = logging.getLogger(__name__)
 
 
-def create_battery_entities(locks: list[dict], coordinator: DataUpdateCoordinator) -> list[SensorEntity]:
-    """Create battery sensors for Sifely locks with battery info."""
+def create_battery_entities(locks: list[dict], coordinator) -> list[SensorEntity]:
+    """Create battery sensor entities for each lock."""
     entities = []
     for lock in locks:
-        battery = lock.get("electricQuantity")
-        lock_id = lock.get("lockId")
-
-        if battery is not None and lock_id is not None:
+        if lock.get("lockId") is not None:
             entities.append(SifelyBatterySensor(lock, coordinator))
         else:
-            _LOGGER.debug(
-                "⏭️ Skipping battery sensor creation for lock (missing battery or lockId): %s", lock.get("lockAlias", "Unknown")
-            )
-
+            _LOGGER.warning("⚠️ Skipping battery sensor for lock with missing lockId: %s", lock)
     return entities
 
 
-class SifelyBatterySensor(SensorEntity):
-    """Battery level sensor for a Sifely lock."""
+class SifelyBatterySensor(CoordinatorEntity, SensorEntity):
+    """Battery level sensor for Sifely Smart Lock."""
 
-    def __init__(self, lock_data: dict, coordinator: DataUpdateCoordinator):
+    def __init__(self, lock_data: dict, coordinator):
+        super().__init__(coordinator)
         self.coordinator = coordinator
         self.lock_data = lock_data
 
-        lock_alias = lock_data.get("lockAlias", "Sifely Lock")
+        alias = lock_data.get("lockAlias", "Sifely Lock")
+        slug = slugify(alias)
         lock_id = lock_data.get("lockId")
 
-        slug = slugify(lock_alias)
-        self._attr_name = f"{lock_alias} Battery"
-        self._attr_unique_id = f"{ENTITY_PREFIX}_battery_{lock_id}" if lock_id else None
-        self._attr_entity_id = f"sensor.{ENTITY_PREFIX}_{slug}_battery"
-        self._attr_native_unit_of_measurement = "%"
+        self._attr_name = f"{ENTITY_PREFIX.capitalize()} Battery {alias}"  # e.g., "Sifely Battery Front Door"
+        self._attr_unique_id = f"{ENTITY_PREFIX}_battery_{slug}_{lock_id}"
         self._attr_device_class = "battery"
+        self._attr_native_unit_of_measurement = "%"
         self._attr_state_class = "measurement"
-        self._attr_entity_category = EntityCategory.DIAGNOSTIC
         self._attr_device_info = async_register_lock_device(lock_data)
 
     @property
-    def native_value(self):
-        return self.lock_data.get("electricQuantity")
+    def native_value(self) -> int | None:
+        """Return the current battery level."""
+        lock_id = self.lock_data.get("lockId")
+        details = self.coordinator.details_data.get(lock_id)
+        if not details:
+            return None
+        return details.get("electricQuantity")
 
     @property
     def available(self):
-        return self.lock_data.get("electricQuantity") is not None
-
-    async def async_update(self):
-        await self.coordinator.async_request_refresh()
-
-    async def async_added_to_hass(self):
-        self.async_on_remove(self.coordinator.async_add_listener(self._handle_coordinator_update))
-
-    def _handle_coordinator_update(self):
-        """Update lock data from coordinator and refresh HA state."""
-        current_id = self.lock_data.get("lockId")
-        for updated_lock in self.coordinator.data:
-            if updated_lock.get("lockId") == current_id:
-                self.lock_data = updated_lock
-                break
-        self.async_write_ha_state()
+        """Battery sensor is only available if lockId is known and battery info has been fetched."""
+        lock_id = self.lock_data.get("lockId")
+        return lock_id is not None and lock_id in self.coordinator.details_data
 
 
 async def async_setup_entry(
@@ -80,12 +63,12 @@ async def async_setup_entry(
     config_entry: ConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:
-    """Set up Sifely battery sensors from a config entry."""
+    """Set up battery sensors."""
     _LOGGER.info("🔋 Setting up Sifely battery sensors")
 
     coordinator = hass.data[DOMAIN].get("coordinator")
     if not coordinator:
-        _LOGGER.warning("⚠️ No coordinator found for Sifely battery sensors")
+        _LOGGER.warning("⚠️ No coordinator found for battery sensors")
         return
 
     entities = create_battery_entities(coordinator.data, coordinator)
@@ -94,4 +77,4 @@ async def async_setup_entry(
     if entities:
         _LOGGER.info("🔋 %d Sifely battery sensors added.", len(entities))
     else:
-        _LOGGER.warning("⚠️ No battery sensors created (none reported battery or lockId)")
+        _LOGGER.warning("⚠️ No battery sensors found to set up.")

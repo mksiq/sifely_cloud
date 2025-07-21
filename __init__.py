@@ -28,11 +28,10 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
     """Handle integration setup from config flow."""
     _LOGGER.info("📦 Setting up Sifely Cloud with options: %s", entry.options)
 
-    if hass.data.get(DOMAIN) is None:
-        hass.data[DOMAIN] = {}
-        _LOGGER.info(STARTUP_MESSAGE)
+    hass.data.setdefault(DOMAIN, {})
+    _LOGGER.info(STARTUP_MESSAGE)
 
-    # Extract credentials from options
+    # Extract credentials from config entry options
     email = entry.options.get(CONF_EMAIL)
     password = entry.options.get(CONF_PASSWORD)
     client_id = entry.options.get(CONF_CLIENT_ID)
@@ -43,7 +42,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
 
     _LOGGER.info("🔐 Initializing Sifely token manager for client_id: %s", client_id)
 
-    # Create token manager and initialize
+    # Create and initialize token manager
     session = async_get_clientsession(hass)
     token_manager = SifelyTokenManager(
         client_id=client_id,
@@ -62,13 +61,24 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
         _LOGGER.exception("❌ Failed to initialize Sifely integration")
         return False
 
-    # Store the token manager for use in other platforms
-    hass.data[DOMAIN][entry.entry_id] = token_manager
+    # Store token manager and coordinator under entry ID
+    hass.data[DOMAIN][entry.entry_id] = {
+        "token_manager": token_manager,
+        "coordinator": coordinator,
+    }
 
-    # Forward to supported platforms (e.g., lock, sensor)
+    # Forward entry setup to platforms
     await hass.config_entries.async_forward_entry_setups(entry, SUPPORTED_PLATFORMS)
 
     return True
+
+
+async def async_refresh_lock_list(hass: HomeAssistant):
+    """Manually trigger a refresh of the lock list."""
+    for entry_id, data in hass.data.get(DOMAIN, {}).items():
+        coordinator = data.get("coordinator")
+        if coordinator:
+            await coordinator.async_fetch_lock_list()
 
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry):
@@ -76,9 +86,15 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry):
     unload_ok = await hass.config_entries.async_unload_platforms(entry, SUPPORTED_PLATFORMS)
 
     if unload_ok:
-        token_manager = hass.data[DOMAIN].get(entry.entry_id)
+        data = hass.data[DOMAIN].pop(entry.entry_id, {})
+        token_manager = data.get("token_manager")
         if token_manager:
             await token_manager.async_shutdown()
-        hass.data[DOMAIN].pop(entry.entry_id, None)
 
     return unload_ok
+
+
+async def async_get_options_flow(config_entry: ConfigEntry):
+    """Expose the options flow handler."""
+    from .config_flow import SifelyCloudOptionsFlowHandler
+    return SifelyCloudOptionsFlowHandler(config_entry)

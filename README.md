@@ -58,4 +58,4 @@ Responsibility	Current Location	Notes
  Token manager initialized and stored in hass.data[DOMAIN][entry_id].
 
 
-
+New locks are descoved on startup, manual reload, and
