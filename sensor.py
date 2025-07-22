@@ -8,7 +8,7 @@ from homeassistant.helpers.entity import EntityCategory
 from homeassistant.util import slugify
 from datetime import datetime, timezone
 
-from .const import DOMAIN, ENTITY_PREFIX, HISTORY_DISPLAY_LIMIT
+from .const import DOMAIN, ENTITY_PREFIX, HISTORY_DISPLAY_LIMIT, HISTORY_RECORD_TYPES
 from .device import async_register_lock_device
 
 _LOGGER = logging.getLogger(__name__)
@@ -83,15 +83,6 @@ class SifelyBatterySensor(CoordinatorEntity, SensorEntity):
 class SifelyLockHistorySensor(CoordinatorEntity, SensorEntity):
     """Sensor to display recent lock activity as text."""
 
-    RECORD_TYPE_MAP = {
-        -5: "Face",
-        -4: "QR Code",
-        4: "Keyboard",
-        7: "IC Card",
-        8: "Fingerprint",
-        55: "Remote",
-    }
-
     def __init__(self, lock_data: dict, coordinator):
         super().__init__(coordinator)
         self.coordinator = coordinator
@@ -111,6 +102,12 @@ class SifelyLockHistorySensor(CoordinatorEntity, SensorEntity):
         self._attr_native_value = None
         self._attr_entity_category = EntityCategory.DIAGNOSTIC
         self._attr_extra_state_attributes = {}
+
+        if not hasattr(coordinator, "update_history_sensor"):
+            coordinator.update_history_sensor = self._external_update
+
+        self._latest_entries: list[dict] = []
+
 
     async def async_update(self):
         """Fetch latest lock history from coordinator."""
@@ -132,7 +129,7 @@ class SifelyLockHistorySensor(CoordinatorEntity, SensorEntity):
             success = entry.get("success", -1)
 
             # Map record type to readable name
-            method = self.RECORD_TYPE_MAP.get(record_type, f"Type {record_type}")
+            method = HISTORY_RECORD_TYPES.get(record_type, f"Type {record_type}")
             success_text = "✅ Success" if success == 1 else "❌ Failed"
 
             try:
@@ -146,6 +143,42 @@ class SifelyLockHistorySensor(CoordinatorEntity, SensorEntity):
             attr_map[f"entry_{i+1}"] = line
 
         self._attr_native_value = lines[0] if lines else "No recent activity"
+        self._attr_extra_state_attributes = attr_map
+
+    async def _external_update(self, lock_id, entries):
+        """Receive external history data from the coordinator."""
+        if lock_id != self.lock_id:
+            return
+
+        self._latest_entries = entries
+        self._update_from_entries()
+        self.async_write_ha_state()
+
+    def _update_from_entries(self):
+        """Set sensor state and attributes from latest_entries."""
+        if not self._latest_entries:
+            self._attr_native_value = "No recent activity"
+            self._attr_extra_state_attributes = {}
+            return
+
+        attr_map = {}
+        latest_value = None
+
+        for entry in self._latest_entries:
+            timestamp = entry.get("lockDate")
+            username = entry.get("username", "Unknown")
+            record_type = entry.get("recordType", "N/A")
+            success = entry.get("success", "Unknown")
+
+            method = HISTORY_RECORD_TYPES.get(record_type, f"Type {record_type}")
+            formatted = f"{username} - {method} - {success}"
+
+            # Use timestamp as the key (ensures clean UI labels)
+            attr_map[timestamp] = formatted
+            if latest_value is None:
+                latest_value = formatted
+
+        self._attr_native_value = latest_value
         self._attr_extra_state_attributes = attr_map
 
 

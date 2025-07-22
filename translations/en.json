@@ -10,7 +10,7 @@
           "User_Password": "Password",
           "clientId": "Client ID",
           "apxNumLocks": "Number of Locks (APX)",
-          "history_entries": "Number of History Entries"
+          "history_entries": "Number of history records to maintain"
         }
       }
     },
@@ -31,7 +31,7 @@
           "User_Password": "Password",
           "clientId": "Client ID",
           "apxNumLocks": "Number of Locks (APX)",
-          "history_entries": "Number of History Entries"
+          "history_entries": "Number of history records to maintain"
         }
       }
     }

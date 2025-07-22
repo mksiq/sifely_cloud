@@ -3,19 +3,22 @@
 import logging
 import json
 from datetime import datetime, timezone, timedelta
+from .history_utils import fetch_and_update_lock_history
 
 from homeassistant.util import dt as dt_util
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.event import async_track_time_interval
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
+
 from .const import (
     DOMAIN,
+    CONF_APX_NUM_LOCKS,
     LOCK_REQUEST_RETRIES,
     STATE_QUERY_INTERVAL,
-    CONF_APX_NUM_LOCKS,
     DETAILS_UPDATE_INTERVAL,
     HISTORY_DISPLAY_LIMIT,
+    HISTORY_INTERVAL,
     TOKEN_401s_BEFORE_REAUTH,
     TOKEN_401s_BEFOR_ALERT,
     KEYLIST_ENDPOINT,
@@ -29,6 +32,7 @@ from .token_manager import SifelyTokenManager
 
 _LOGGER = logging.getLogger(__name__)
 
+HISTORY_FOLDER = "history"
 
 class SifelyCoordinator(DataUpdateCoordinator):
     """Coordinates updates for Sifely locks."""
@@ -102,7 +106,6 @@ class SifelyCoordinator(DataUpdateCoordinator):
             _LOGGER.exception("🚨 Failed to fetch lock list: %s", str(e))
             raise UpdateFailed(f"Exception fetching locks: {str(e)}")
 
-
     async def async_query_open_state(self):
         """Query open/locked state for each lock and store in self.open_state_data."""
         if not self.lock_list:
@@ -170,7 +173,6 @@ class SifelyCoordinator(DataUpdateCoordinator):
 
             except Exception as e:
                 _LOGGER.warning("🚫 Failed to fetch open state for %s: %s", lock_id, e)
-
 
     async def async_query_lock_details(self):
         """Query detailed lock info for each lock and store in self.details_data."""
@@ -326,7 +328,24 @@ async def setup_sifely_coordinator(
         _LOGGER.debug("⏱️ Scheduled task: Fetching open/closed state")
         await coordinator.async_query_open_state()
 
+    async def _run_history_update(now):
+        _LOGGER.debug("⏱️ Scheduled task: Fetching lock history diffs")
+
+        for lock in coordinator.lock_list:
+            lock_id = lock.get("lockId")
+            if not lock_id:
+                continue
+
+            try:
+                entries = await fetch_and_update_lock_history(coordinator, lock_id)
+                if hasattr(coordinator, "update_history_sensor"):
+                    await coordinator.update_history_sensor(lock_id, entries)
+            except Exception as e:
+                _LOGGER.warning("⚠️ Failed updating history for %s: %s", lock_id, e)
+
+
     async_track_time_interval(hass, _run_lock_details, timedelta(seconds=DETAILS_UPDATE_INTERVAL))
     async_track_time_interval(hass, _run_open_state, timedelta(seconds=STATE_QUERY_INTERVAL))
+    async_track_time_interval(hass, _run_history_update, timedelta(seconds=HISTORY_INTERVAL))
 
     return coordinator

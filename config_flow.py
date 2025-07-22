@@ -10,6 +10,7 @@ from .const import (
     CONF_PASSWORD,
     CONF_CLIENT_ID,
     CONF_APX_NUM_LOCKS,
+    CONF_HISTORY_ENTRIES,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -44,6 +45,7 @@ class SifelyCloudConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 vol.Required(CONF_PASSWORD, default=user_input.get(CONF_PASSWORD, "")): str,
                 vol.Required(CONF_CLIENT_ID, default=user_input.get(CONF_CLIENT_ID, "")): str,
                 vol.Required(CONF_APX_NUM_LOCKS, default=user_input.get(CONF_APX_NUM_LOCKS, 5)): vol.In([5, 10, 15, 20, 25, 30, 35, 40, 45, 50]),
+                vol.Optional(CONF_HISTORY_ENTRIES, default=user_input.get(CONF_HISTORY_ENTRIES, 20)): vol.In([10, 20, 30, 40,  50, 60, 70, 80, 90, 100]),
             }),
             errors=errors
         )
@@ -81,6 +83,7 @@ class SifelyCloudOptionsFlowHandler(config_entries.OptionsFlow):
                 vol.Required(CONF_PASSWORD, default=default(CONF_PASSWORD)): str,
                 vol.Required(CONF_CLIENT_ID, default=default(CONF_CLIENT_ID)): str,
                 vol.Required(CONF_APX_NUM_LOCKS, default=default(CONF_APX_NUM_LOCKS, 5)): vol.In([5, 10, 15, 20, 25, 30, 35, 40, 45, 50]),
+                vol.Optional(CONF_HISTORY_ENTRIES, default=default(CONF_HISTORY_ENTRIES, 20)): vol.In([10, 20, 30, 40,  50, 60, 70, 80, 90, 100]),
             }),
         )
 

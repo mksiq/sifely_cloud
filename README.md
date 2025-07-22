@@ -90,3 +90,19 @@ If you want the cloud error to survive reboot until cleared, you can store it in
 
 Would you like me to now generate the diagnostic sensor (cloud_error_sensor.py) and wire it up in sensor.py and __init__.py?
 
+Add sensor:comes from lock detail
+privacyLock. Example: 1
+tamperAlert.  Example: 2
+Add icon image
+
+
+ While you test, here’s a quick internal checklist:
+ CSV file is created and updated in history/ directory
+ Only new records (after recordId) are appended
+ History is trimmed to the number in history_entries user option
+ Sensor state and attributes update properly
+ Each attribute key shows formatted time and username, not entry_x
+ No blocking open() warnings (everything uses run_in_executor)
+ No 401 token errors during polling
+
+
