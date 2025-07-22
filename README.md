@@ -2,14 +2,15 @@
 
 A **custom integration** for Home Assistant that connects to **Sifely smart locks** using the official Sifely Cloud API. Provides real-time visibility and control over your locks, with enhanced diagnostic and history features.
 
+
+![hacs_badge](https://img.shields.io/badge/HACS-Custom-orange.svg) ![license](https://img.shields.io/github/license/kenster1965/sifely_cloud.svg)
+
+
 ## 📚 API Documentation
 All Sifely Cloud API endpoints used in this integration are based on the official documentation:
 🔗 [https://apidocs.sifely.com](https://apidocs.sifely.com)
+
 This includes authentication, lock control, history querying, and diagnostics.
-
-
-
-![hacs_badge](https://img.shields.io/badge/HACS-Custom-orange.svg) ![license](https://img.shields.io/github/license/yourname/sifely_cloud.svg)
 
 ---
 
@@ -31,16 +32,19 @@ This includes authentication, lock control, history querying, and diagnostics.
 ## 🖼️ UI Screenshots (Examples)
 Below are examples of how entities appear in the Home Assistant UI. These include:
 
-Integration setup screen
+- Integration setup screen
+- <img width="321" height="460" alt="image" src="https://github.com/user-attachments/assets/e9504bc2-b1f5-4fe8-8b37-88345f9309e8" />
 
-Lock control
+- Lock control
+- <img width="464" height="454" alt="image" src="https://github.com/user-attachments/assets/874a5808-9f7d-454d-88bd-db86b0710a06" />
+- <img width="462" height="410" alt="image" src="https://github.com/user-attachments/assets/f771a8f1-b2eb-47d3-9408-62fc435e72c9" />
 
-Battery and diagnostic sensors
+- Battery, Privacy Lock, and Tamper Alert sensors
+-<img width="262" height="222" alt="image" src="https://github.com/user-attachments/assets/9b501d6a-f17a-4665-af20-242ea772be1c" />
 
-Privacy Lock and Tamper Alert binary sensors
-
-Lock history sensor with structured entries
-
+- Lock history sensor with structured entries
+- <img width="266" height="183" alt="image" src="https://github.com/user-attachments/assets/368f96b6-8489-450f-85a6-e0be3c12c409" />
+- <img width="446" height="805" alt="image" src="https://github.com/user-attachments/assets/a9f2772b-208e-46e5-93fd-1bace074949d" />
 
 
 
