@@ -13,7 +13,7 @@ CONF_EMAIL = "User_Email"#
 CONF_PASSWORD = "User_Password"
 CONF_CLIENT_ID = "clientId"
 CONF_APX_NUM_LOCKS = "apxNumLocks" # Approximate number of locks
-CONF_HISTORY_ENTRIES = "history_entries"  # Number of history entries to keep
+CONF_HISTORY_ENTRIES = "history_entries"  # Number of history records to keep
 
 
 # Polling Intervals (in seconds)
@@ -21,7 +21,7 @@ DETAILS_UPDATE_INTERVAL = 300    # e.g., 5 minutes for Lock details
 STATE_QUERY_INTERVAL = 60        # e.g., 60 seconds for Lock state
 HISTORY_INTERVAL = 3600          # e.g., 1 hour for Lock history
 
-HISTORY_DISPLAY_LIMIT = 20  # Limit for history fetching, max possible history entries in for HISTORY_INTERVAL time
+HISTORY_DISPLAY_LIMIT = 20  # Limit for history fetching, max possible history records in for HISTORY_INTERVAL time
 LOCK_REQUEST_RETRIES = 3  # Number of retries for lock/unlock requests
 TOKEN_REFRESH_BUFFER_MINUTES = 5 # Buffer time to refresh token early (before actual expiration)
 TOKEN_401s_BEFORE_REAUTH = 5  # Number of 401 errors before re-authentication
@@ -64,7 +64,7 @@ VALID_SENSOR_CLASSES = {
 }
 
 # Supported platforms
-SUPPORTED_PLATFORMS = {"lock", "sensor"}
+SUPPORTED_PLATFORMS = {"lock", "sensor", "binary_sensor"}
 
 STARTUP_MESSAGE = f"""
 -------------------------------------------------------------------
