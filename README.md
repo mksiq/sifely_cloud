@@ -17,7 +17,7 @@ This includes authentication, lock control, history querying, and diagnostics.
 ## 📦 Features
 
 - 🔐 **Lock/Unlock support**
-- 🪫 **Battery level monitoring**
+- 🔋 **Battery level monitoring**
 - 📖 **Historical event logging** (username, method, success/fail)
 - 🚨 **Cloud error diagnostics**
 - 🧠 **Open/closed state polling**
@@ -40,7 +40,7 @@ Below are examples of how entities appear in the Home Assistant UI. These includ
 - <img width="462" height="410" alt="image" src="https://github.com/user-attachments/assets/f771a8f1-b2eb-47d3-9408-62fc435e72c9" />
 
 - Battery, Privacy Lock, and Tamper Alert sensors
--<img width="262" height="222" alt="image" src="https://github.com/user-attachments/assets/9b501d6a-f17a-4665-af20-242ea772be1c" />
+- <img width="262" height="222" alt="image" src="https://github.com/user-attachments/assets/9b501d6a-f17a-4665-af20-242ea772be1c" />
 
 - Lock history sensor with structured entries
 - <img width="266" height="183" alt="image" src="https://github.com/user-attachments/assets/368f96b6-8489-450f-85a6-e0be3c12c409" />
@@ -121,14 +121,9 @@ config/custom_components/sifely_cloud/history/history_<lockId>.csv
 
 ---
 
-## 🔍 Future Roadmap
+## 🚧 Roadmap
 
-- [ ] Lock schedule viewer/editor
-- [ ] Doorbell / touch event detection (if supported)
-- [ ] Configurable polling intervals
-- [ ] Auto-restore lock history from cloud on reboot
-
----
+See the [ROADMAP.md](./ROADMAP.md) for upcoming features and ideas.
 
 ## 🧑‍💻 Contributing / Issues
 
@@ -138,18 +133,11 @@ Got a feature request, bug report, or enhancement idea?
 - Pull requests are welcome and encouraged!
 - Follow Home Assistant [developer documentation](https://developers.home-assistant.io/) when contributing code
 
-
 ---
 
 ## 📜 Disclaimer
 
 This is an independent project and is **not affiliated with Sifely**. Use at your own risk. API behavior may change without notice.
-
----
-
-## 🚧 Roadmap
-
-See the [ROADMAP.md](./ROADMAP.md) for upcoming features and ideas.
 
 ---
 

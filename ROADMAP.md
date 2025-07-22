@@ -23,7 +23,7 @@ This document outlines planned features, improvements, and ideas for the future 
 
 ---
 
-## 🧭 Planned Features
+## 🧭 Planned Features / Fixes
 
 Maybe:
 - [ ] For expired credentials, add async_step_reauth() support so the user can re-authenticate without removing the integration?
@@ -32,7 +32,11 @@ Maybe:
 - [ ] Button to download the latest lock history to a .csv file via the www/ folder, or maybe email?
 - [ ] Persist cloud error status.
 - [ ] Update translations with any text out there.
-- [ ]. Look at UUID, token, or hashed identifier from web and find user name for history file.
+- [ ] Look at UUID, token, or hashed identifier from web and find user name for history file.
+- [ ] Lock schedule viewer/editor
+- [ ] Doorbell / touch event detection (if supported)
+- [ ] Configurable polling intervals
+- [ ] Auto-restore lock history from cloud on reboot
 
 Thinking about:
 - [ ] Rename locks from Home Assistant UI.
