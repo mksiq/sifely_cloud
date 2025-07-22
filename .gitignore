@@ -14,3 +14,5 @@
 # I want these files ignored!!
 secrets.yaml
 sifely_token.json
+# /history/*.csv
+todo

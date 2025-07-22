@@ -23,6 +23,7 @@ class SifelyTokenManager:
         self.access_token = None
         self.refresh_token_value = None
         self.token_expiry = None
+        self._login_token = None
 
         self._refresh_unsub = None
 
@@ -43,6 +44,7 @@ class SifelyTokenManager:
         self.access_token = opts.get("access_token")
         self.refresh_token_value = opts.get("refresh_token")
         expiry_ts = opts.get("token_expiry")
+        self._login_token = opts.get("login_token")
 
         if expiry_ts:
             self.token_expiry = datetime.fromisoformat(expiry_ts)
@@ -53,22 +55,23 @@ class SifelyTokenManager:
         return datetime.now(timezone.utc) < self.token_expiry
 
     async def _perform_login(self):
-        payload = {
-            "client_id": self.client_id,
-            "username": self.email,
-            "password": self.password,
-        }
-
         _LOGGER.debug("🔐 Requesting Sifely login from: %s", TOKEN_ENDPOINT)
 
         try:
-            async with self.session.post(TOKEN_ENDPOINT, params=payload) as resp:
-                resp_json = await resp.json()
+            async with self.session.post(TOKEN_ENDPOINT, params={
+                "client_id": self.client_id,
+                "username": self.email,
+                "password": self.password,
+            }) as resp:
+                if resp.status != 200:
+                    raise Exception(f"Login HTTP error: {resp.status}")
+
+                resp_json = await resp.json(content_type=None)
                 _LOGGER.debug("🔁 Login response: %s", resp_json)
 
-                if resp.status == 200 and "data" in resp_json:
+                if resp_json.get("code") == 200 and "data" in resp_json:
                     data = resp_json["data"]
-                    self.access_token = data.get("token")
+                    self._login_token = data.get("token")
                     self.refresh_token_value = data.get("refreshToken")
                 else:
                     raise Exception(f"Login failed: {resp_json}")
@@ -77,22 +80,24 @@ class SifelyTokenManager:
             raise
 
     async def _perform_token_refresh(self):
-        payload = {
-            "client_id": self.client_id,
-            "grant_type": "refresh_token",
-            "refresh_token": self.refresh_token_value,
-        }
         _LOGGER.debug("🔄 Refreshing token from: %s", REFRESH_ENDPOINT)
 
         try:
-            async with self.session.post(REFRESH_ENDPOINT, params=payload) as resp:
-                resp_json = await resp.json()
+            async with self.session.post(REFRESH_ENDPOINT, params={
+                "client_id": self.client_id,
+                "grant_type": "refresh_token",
+                "refresh_token": self.refresh_token_value,
+            }) as resp:
+                if resp.status != 200:
+                    raise Exception(f"Refresh HTTP error: {resp.status}")
+
+                resp_json = await resp.json(content_type=None)
                 _LOGGER.debug("🔁 Refresh token response: %s", resp_json)
 
-                if resp.status == 200 and "access_token" in resp_json:
-                    self.access_token = resp_json.get("access_token")
-                    self.refresh_token_value = resp_json.get("refresh_token")
-                    expires_in = resp_json.get("expires_in")
+                if "access_token" in resp_json:
+                    self.access_token = resp_json["access_token"]
+                    self.refresh_token_value = resp_json.get("refresh_token", self.refresh_token_value)
+                    expires_in = resp_json.get("expires_in", 3600)
                     self._set_token_expiry(expires_in)
                     await self._store_token()
                     _LOGGER.info("🔄 Token refreshed. Expires at: %s", self.token_expiry)
@@ -129,8 +134,16 @@ class SifelyTokenManager:
             "access_token": self.access_token,
             "refresh_token": self.refresh_token_value,
             "token_expiry": self.token_expiry.isoformat(),
+            "login_token": self._login_token,
         })
         self.hass.config_entries.async_update_entry(self.config_entry, options=opts)
+
+    def get_login_token(self):
+        return self._login_token
+
+    async def refresh_login_token(self):
+        await self._perform_login()
+        await self._perform_token_refresh()
 
     async def async_shutdown(self):
         if self._refresh_unsub:

@@ -5,19 +5,53 @@ import os
 # Base component constants
 NAME = "Sifely Cloud"
 DOMAIN = "sifely_cloud"
-VERSION = "2025.07.16"
+ENTITY_PREFIX = "sifely" # Prefix for entity names
+VERSION = "1.0.0"
 ISSUE_URL = "https://github.com/kenster1965/sifely_cloud/issues"
 
-CONF_EMAIL = "User_Email"
+CONF_EMAIL = "User_Email"#
 CONF_PASSWORD = "User_Password"
 CONF_CLIENT_ID = "clientId"
+CONF_APX_NUM_LOCKS = "apxNumLocks" # Approximate number of locks
+CONF_HISTORY_ENTRIES = "history_entries"  # Number of history records to keep
 
-# Buffer time to refresh token early (before actual expiration)
-TOKEN_REFRESH_BUFFER_MINUTES = 5
 
-API_BASE_URL = "https://app-smart-server.sifely.com/system/smart"
-TOKEN_ENDPOINT = f"{API_BASE_URL}/login"
-REFRESH_ENDPOINT = f"{API_BASE_URL}/oauthToken"
+# Polling Intervals (in seconds)
+DETAILS_UPDATE_INTERVAL = 300    # e.g., 5 minutes for Lock details
+STATE_QUERY_INTERVAL = 60        # e.g., 60 seconds for Lock state
+HISTORY_INTERVAL = 3600          # e.g., 1 hour for Lock history
+
+HISTORY_DISPLAY_LIMIT = 20  # Limit for history fetching, max possible history records in for HISTORY_INTERVAL time
+LOCK_REQUEST_RETRIES = 3  # Number of retries for lock/unlock requests
+TOKEN_REFRESH_BUFFER_MINUTES = 5 # Buffer time to refresh token early (before actual expiration)
+TOKEN_401s_BEFORE_REAUTH = 5  # Number of 401 errors before re-authentication
+TOKEN_401s_BEFOR_ALERT = 10  # Number of 401 errors before alerting user
+
+
+# API endpoints
+API_BASE_URL = "https://app-smart-server.sifely.com"
+TOKEN_ENDPOINT = f"{API_BASE_URL}/system/smart/login"
+REFRESH_ENDPOINT = f"{API_BASE_URL}/system/smart/oauthToken"
+KEYLIST_ENDPOINT = f"{API_BASE_URL}/v3/key/list"
+LOCK_DETAIL_ENDPOINT = f"{API_BASE_URL}/v3/lock/detail"
+QUERY_STATE_ENDPOINT = f"{API_BASE_URL}/v3/lock/queryOpenState"
+UNLOCK_ENDPOINT = f"{API_BASE_URL}/v3/lock/unlock"
+LOCK_ENDPOINT = f"{API_BASE_URL}/v3/lock/lock"
+LOCK_HISTORY_ENDPOINT = f"{API_BASE_URL}/v3/lockRecord/list"
+
+# Mapping of record types to human-readable names
+# This is used for displaying history records in a user-friendly way
+HISTORY_RECORD_TYPES = {
+    -5: "Face",
+    -4: "QR Code",
+    4: "Keyboard",
+    7: "IC Card",
+    8: "Fingerprint",
+    11: "App",
+    12: "Gateway",
+    47: "Key",
+    55: "Remote",
+}
 
 # Valid HA entity categories
 VALID_ENTITY_CATEGORIES = {
@@ -30,7 +64,7 @@ VALID_SENSOR_CLASSES = {
 }
 
 # Supported platforms
-SUPPORTED_PLATFORMS = {"switch", "sensor", "number"}
+SUPPORTED_PLATFORMS = {"lock", "sensor", "binary_sensor"}
 
 STARTUP_MESSAGE = f"""
 -------------------------------------------------------------------
