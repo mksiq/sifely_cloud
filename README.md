@@ -134,15 +134,22 @@ config/custom_components/sifely_cloud/history/history_<lockId>.csv
 
 Got a feature request, bug report, or enhancement idea?
 
-👉 [Open an Issue or Feature Request](https://github.com/kenster1965/sifely_cloud/issues)
+- Found a bug or want a new feature? [Open an issue](https://github.com/kenster1965/sifely_cloud/issues)
+- Pull requests are welcome and encouraged!
+- Follow Home Assistant [developer documentation](https://developers.home-assistant.io/) when contributing code
 
-Pull requests welcome!
 
 ---
 
 ## 📜 Disclaimer
 
 This is an independent project and is **not affiliated with Sifely**. Use at your own risk. API behavior may change without notice.
+
+---
+
+## 🚧 Roadmap
+
+See the [ROADMAP.md](./ROADMAP.md) for upcoming features and ideas.
 
 ---
 
