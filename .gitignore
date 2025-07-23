@@ -1,18 +1,34 @@
-# .gitignore for my config dir.
-# An * ensures that everything will be ignored.
-# *
-# You can whitelist files/folders with !, these will not be ignored.
-!*.yaml
-!.gitignore
-!*.md
-!*.sh
-!*.js*
+# Ignore Python bytecode and cache
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
 
-# Ignored folders!!
-#config/devices
+# Ignore config/devices folder
+#config/devices/
 
-# I want these files ignored!!
+# Ignore secrets and sensitive files
 secrets.yaml
-sifely_token.json
-# /history/*.csv
+
+# Ignore history CSV files
+custom_components/sifely_cloud/history/*.csv
+
+# Ignore todo file
 todo
+
+# Ignore virtual environments (common names)
+env/
+venv/
+.venv/
+
+# Ignore OS-specific files
+.DS_Store
+Thumbs.db
+
+# Ignore logs
+*.log
+
+# Ignore backups or temp files
+*.bak
+*.swp
+*.tmp
