@@ -1,9 +1,8 @@
 {
     "domain": "sifely_cloud",
     "name": "Sifely Cloud",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "documentation": "https://github.com/kenster1965/sifely_cloud",
-    "logo": "custom_components/sifely_cloud/icon.png",
     "dependencies": [],
     "codeowners": ["@kenster1965"],
     "config_flow": true,

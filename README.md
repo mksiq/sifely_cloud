@@ -17,7 +17,7 @@ This includes authentication, lock control, history querying, and diagnostics.
 ## 📦 Features
 
 - 🔐 **Lock/Unlock support**
-- 🪫 **Battery level monitoring**
+- 🔋 **Battery level monitoring**
 - 📖 **Historical event logging** (username, method, success/fail)
 - 🚨 **Cloud error diagnostics**
 - 🧠 **Open/closed state polling**
@@ -40,7 +40,7 @@ Below are examples of how entities appear in the Home Assistant UI. These includ
 - <img width="462" height="410" alt="image" src="https://github.com/user-attachments/assets/f771a8f1-b2eb-47d3-9408-62fc435e72c9" />
 
 - Battery, Privacy Lock, and Tamper Alert sensors
--<img width="262" height="222" alt="image" src="https://github.com/user-attachments/assets/9b501d6a-f17a-4665-af20-242ea772be1c" />
+- <img width="262" height="222" alt="image" src="https://github.com/user-attachments/assets/9b501d6a-f17a-4665-af20-242ea772be1c" />
 
 - Lock history sensor with structured entries
 - <img width="266" height="183" alt="image" src="https://github.com/user-attachments/assets/368f96b6-8489-450f-85a6-e0be3c12c409" />
@@ -53,18 +53,23 @@ Below are examples of how entities appear in the Home Assistant UI. These includ
 ### Manual Installation
 
 1. Copy the folder `sifely_cloud/` to your Home Assistant `custom_components/` directory:
+1. Using the tool of choice open the directory (folder) for your HA configuration (where you find configuration.yaml).
 
-```bash
-config/custom_components/sifely_cloud/
-```
+2. If you do not have a custom_components directory (folder) there, you need to create it.
 
+3. In the custom_components directory (folder) create a new folder called `sifely_cloud`.
 
-2. Restart Home Assistant.
+4. Download all the files from the `custom_components/sifely_cloud/` directory (folder) in this repository.
 
-3. Navigate to **Settings > Devices & Services > Integrations**
-   Click ➕ Add Integration → Search for **Sifely Cloud**
+5. Place the files you downloaded in the new directory (`sifely_cloud`) you created.
 
-4. Enter your credentials and Client ID from the Sifely app.
+6. Restart Home Assistant.
+
+7. Navigate to **Settings > Devices & Services > Integrations**.
+
+   Click ➕ Add Integration → Search for **Sifely Cloud**.
+
+8. Enter your credentials per Configuration Options below.
 
 ---
 
@@ -121,22 +126,17 @@ config/custom_components/sifely_cloud/history/history_<lockId>.csv
 
 ---
 
-## 🔍 Future Roadmap
+## 🚧 Roadmap
 
-- [ ] Lock schedule viewer/editor
-- [ ] Doorbell / touch event detection (if supported)
-- [ ] Configurable polling intervals
-- [ ] Auto-restore lock history from cloud on reboot
-
----
+See the [ROADMAP.md](./ROADMAP.md) for upcoming features and ideas.
 
 ## 🧑‍💻 Contributing / Issues
 
 Got a feature request, bug report, or enhancement idea?
 
-👉 [Open an Issue or Feature Request](https://github.com/kenster1965/sifely_cloud/issues)
-
-Pull requests welcome!
+- Found a bug or want a new feature? [Open an issue](https://github.com/kenster1965/sifely_cloud/issues)
+- Pull requests are welcome and encouraged!
+- Follow Home Assistant [developer documentation](https://developers.home-assistant.io/) when contributing code
 
 ---
 
