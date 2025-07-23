@@ -22,9 +22,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - UI-friendly integration with diagnostics and YAML options
 
 
-## [x.x.x] - ?
+## [1.0.1] - ?
 
 ### Added
-- Setup git bug, ferature, isshue reporting
+- Setup git bug, ferature, issue reporting
 - Added git LICENSE
-- Adding git formates
+- Adding git formats
+- Updated directory structure for manual download in to HA

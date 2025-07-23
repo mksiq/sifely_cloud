@@ -53,18 +53,23 @@ Below are examples of how entities appear in the Home Assistant UI. These includ
 ### Manual Installation
 
 1. Copy the folder `sifely_cloud/` to your Home Assistant `custom_components/` directory:
+1. Using the tool of choice open the directory (folder) for your HA configuration (where you find configuration.yaml).
 
-```bash
-config/custom_components/sifely_cloud/
-```
+2. If you do not have a custom_components directory (folder) there, you need to create it.
 
+3. In the custom_components directory (folder) create a new folder called `sifely_cloud`.
 
-2. Restart Home Assistant.
+4. Download all the files from the `custom_components/sifely_cloud/` directory (folder) in this repository.
 
-3. Navigate to **Settings > Devices & Services > Integrations**
-   Click ➕ Add Integration → Search for **Sifely Cloud**
+5. Place the files you downloaded in the new directory (`sifely_cloud`) you created.
 
-4. Enter your credentials and Client ID from the Sifely app.
+6. Restart Home Assistant.
+
+7. Navigate to **Settings > Devices & Services > Integrations**.
+
+   Click ➕ Add Integration → Search for **Sifely Cloud**.
+
+8. Enter your credentials per Configuration Options below.
 
 ---
 
