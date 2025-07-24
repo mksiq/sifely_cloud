@@ -45,17 +45,18 @@ This includes authentication, lock control, history querying, and diagnostics.
 Below are examples of how entities appear in the Home Assistant UI. These include:
 
 - Integration setup screen
-- <img src="https://github.com/kenster1965/sifely_cloud/tree/main/images/config_options.jpg" />
+- ![config_options](images/images/config_options.jpg)
 
 - Lock Control, Battery, Privacy Lock, Tamper Alert sensors, ...
-- <img src="https://github.com/kenster1965/sifely_cloud/tree/main/images/panel.jpg" />
-- <img src="https://github.com/kenster1965/sifely_cloud/tree/main/images/show_locked.jpg" />
-- <img src="https://github.com/kenster1965/sifely_cloud/tree/main/images/logbook.jpg" />
+- ![panel](images/images/panel.jpg)
+- ![show_locked](images/images/show_locked.jpg)
+- ![logbook](images/images/logbook.jpg)
 
 - Lock history sensor with structured entries
-- <img src="https://github.com/kenster1965/sifely_cloud/tree/main/images/history.jpg" />
-- <img src="https://github.com/kenster1965/sifely_cloud/tree/main/images/access_history.jpg" />
+- ![history](images/images/history.jpg)
+- ![access_history](images/images/access_history.jpg)
 
+---
 
 ## 🔧 Installation
 ### Manual Installation
