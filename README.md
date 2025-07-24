@@ -44,17 +44,17 @@ This includes authentication, lock control, history querying, and diagnostics.
 ## 🖼️ UI Screenshots
 Below are examples of how entities appear in the Home Assistant UI. These include:
 
-- Integration setup screen
-- ![config_options](images/images/config_options.jpg)
+- Integration setup screen  
+  <img src="images/config_options.jpg" alt="config_options" width="300px">
 
-- Lock Control, Battery, Privacy Lock, Tamper Alert sensors, ...
-- ![panel](images/images/panel.jpg)
-- ![show_locked](images/images/show_locked.jpg)
-- ![logbook](images/images/logbook.jpg)
+- Lock Control, Battery, Privacy Lock, Tamper Alert sensors, ...  
+  <img src="images/panel.jpg" alt="panel" width="300px">  
+  <img src="images/show_locked.jpg" alt="show_locked" width="300px">
+  <img src="images/logbook.jpg" alt="logbook" width="300px">
 
-- Lock history sensor with structured entries
-- ![history](images/images/history.jpg)
-- ![access_history](images/images/access_history.jpg)
+- Lock history sensor with structured entries  
+  <img src="images/history.jpg" alt="history" width="300px">
+  <img src="images/access_history.jpg" alt="access_history" width="300px">
 
 ---
 
