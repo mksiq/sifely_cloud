@@ -3,6 +3,7 @@
     "name": "Sifely Cloud",
     "version": "1.0.1",
     "documentation": "https://github.com/kenster1965/sifely_cloud",
+    "issue_tracker": "https://github.com/Kenster1965/sifely_cloud/issues/new/choose",
     "dependencies": [],
     "codeowners": ["@kenster1965"],
     "config_flow": true,
