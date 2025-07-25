@@ -1,11 +1,13 @@
-# 🏠 Sifely Cloud - Home Assistant Integration
+# <img src="images/logo2.png" height="50px"> Sifely Cloud - <img src="images/Great Logo.avif" height="30px"> - Home Assistant Integration
 
 A **custom integration** for Home Assistant that connects to **Sifely smart locks** using the official Sifely Cloud API. Provides real-time visibility and control over your locks, with enhanced diagnostic and history features.
 
 ![hacs_badge](https://img.shields.io/badge/HACS-Custom-orange.svg) 
 [![GitHub release](https://img.shields.io/github/v/tag/Kenster1965/sifely_cloud?label=version)](https://github.com/Kenster1965/sifely_cloud/tags)
 [![License](https://img.shields.io/github/license/Kenster1965/sifely_cloud)](https://github.com/Kenster1965/sifely_cloud/blob/main/LICENSE)
-[![Report Issue](https://img.shields.io/badge/Report-Issue-blue)](https://github.com/Kenster1965/sifely_cloud/issues/new/choose)
+[![Report Issue](https://img.shields.io/badge/Report-Issue-blue)](https://github.com/Kenster1965/sifely_cloud/issues/new/choose)  
+[![Community Forum](https://img.shields.io/badge/Community-Forum-blue.svg?style=flat&logo=home-assistant)](https://community.home-assistant.io/)
+
 
 - [API Documentation](#-api-documentation)
 - [Features](#-features)
@@ -21,9 +23,8 @@ A **custom integration** for Home Assistant that connects to **Sifely smart lock
 - [License](#-license)
   
 ## 📚 API Documentation
-All Sifely Cloud API endpoints used in this integration are based on the official documentation:
-[https://apidocs.sifely.com](https://apidocs.sifely.com)
-
+All Sifely Cloud API endpoints used in this integration are based on the official documentation:  
+[https://apidocs.sifely.com](https://apidocs.sifely.com)  
 This includes authentication, lock control, history querying, and diagnostics.
 
 ---
@@ -59,6 +60,9 @@ Below are examples of how entities appear in the Home Assistant UI. These includ
 ---
 
 ## 🔧 Installation
+### Via HACS
+[![hacs_badge](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=kenster1965&repository=sifely_cloud&category=integration)
+
 ### Manual Installation
 1. Using the tool of choice open the directory (folder) for your HA configuration (where you find configuration.yaml).
 2. If you do not have a custom_components directory (folder) there, you need to create it.
@@ -128,7 +132,9 @@ Got a feature request, bug report, or enhancement idea?
 ---
 
 ## 📜 Disclaimer
-This is an independent project and is **not affiliated with Sifely**. Use at your own risk. API behavior may change without notice.
+- This is an independent project and is **not affiliated with Sifely**.  
+- Use at your own risk. API behavior may change without notice.  
+- Sifely and its trademarks and registered trademarks including the images in this repository, are property of their respective owners. All images in this repository are used by the Home Assistant project for identification purposes only.
 
 ---
 
